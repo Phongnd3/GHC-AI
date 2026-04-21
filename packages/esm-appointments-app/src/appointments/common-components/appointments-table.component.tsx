@@ -11,6 +11,7 @@ import {
   Pagination,
   Table,
   TableBatchAction,
+  TableBatchActions,
   TableBody,
   TableCell,
   TableContainer,
@@ -39,7 +40,6 @@ import {
   launchWorkspace2,
   usePagination,
   showModal,
-  TableBatchActions,
 } from '@openmrs/esm-framework';
 import { exportAppointmentsToSpreadsheet } from '../../helpers/excel';
 import { AppointmentStatus, type Appointment } from '../../types';
