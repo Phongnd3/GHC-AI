@@ -52,6 +52,6 @@
     "swr": "2.x"
   },
   "devDependencies": {
-    "openmrs": "next"
+    "openmrs": "^9.0.2"
   }
 }
