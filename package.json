@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "start": "openmrs develop",
+    "start:full": "yarn start --sources \"packages/esm-active-visits-app\" --sources \"packages/esm-appointments-app\" --sources \"packages/esm-bed-management-app\" --sources \"packages/esm-home-app\" --sources \"packages/esm-patient-list-management-app\" --sources \"packages/esm-patient-registration-app\" --sources \"packages/esm-patient-search-app\" --sources \"packages/esm-service-queues-app\" --sources \"packages/esm-ward-app\" --backend https://dev3.openmrs.org --config-url /openmrs/spa/config-core_demo.json",
     "restart": "pkill -f 'openmrs/dist' || true && sleep 2 && yarn start --sources 'packages/esm-*-app' --backend https://dev3.openmrs.org",
     "ci:publish": "yarn workspaces foreach --all --topological --exclude @openmrs/esm-patient-management npm publish --access public --tag latest",
     "ci:prepublish": "yarn workspaces foreach --all --topological --exclude @openmrs/esm-patient-management npm publish --access public --tag next",
