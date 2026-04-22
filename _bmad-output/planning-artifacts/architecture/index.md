@@ -5,8 +5,8 @@
 - [Architecture Decision Document - GHC-AI Doctor Mobile App](#table-of-contents)
   - [stepsCompleted: [1, 2, 3, 4, 5, 6, 7]
 inputDocuments: [
-"_bmad-output/planning-artifacts/prd.md",
-"_bmad-output/planning-artifacts/ux-design-specification.md",
+"_bmad-output/planning-artifacts/prd/index.md",
+"_bmad-output/planning-artifacts/ux-design-specification/index.md",
 "docs/reverse-engineering/00-system-overview/system-architecture-survey.md"
 ]
 workflowType: 'architecture'

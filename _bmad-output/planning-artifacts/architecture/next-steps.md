@@ -10,8 +10,8 @@
 `_bmad-output/planning-artifacts/architecture.md`
 
 **Reference Documents:**
-- PRD: `_bmad-output/planning-artifacts/prd.md`
-- UX Design: `_bmad-output/planning-artifacts/ux-design-specification.md`
+- PRD: `_bmad-output/planning-artifacts/prd/index.md`
+- UX Design: `_bmad-output/planning-artifacts/ux-design-specification/index.md`
 - Architecture: `_bmad-output/planning-artifacts/architecture.md`
 
 ---

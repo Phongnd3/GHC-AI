@@ -375,5 +375,5 @@ participants: ["Kiro (AI Assistant)", "TrangN (Product Owner)"]
 **Document Status:** Complete  
 **Last Updated:** 2026-04-21  
 **Related Documents:** 
-- `prd.md` - Product Requirements Document
+- `prd/index.md` - Product Requirements Document
 - `phase-summary-report-template.md` - Phase reporting template

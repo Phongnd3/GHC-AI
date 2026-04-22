@@ -63,7 +63,7 @@ The app integrates with existing OpenMRS O3 backend via REST APIs with no backen
 - Empty state handling: Distinguish "no data" vs "no allergies" (clinically significant)
 
 **Design Constraints:**
-- **MANDATORY:** All UI implementation must follow `ux-design-specification.md`
+- **MANDATORY:** All UI implementation must follow `ux-design-specification/index.md`
 - Material Design 3 with OpenMRS O3 brand adaptation
 - Wireframes and component specifications are binding
 - Screen layouts, navigation flows, and interaction patterns defined in UX spec
@@ -71,7 +71,7 @@ The app integrates with existing OpenMRS O3 backend via REST APIs with no backen
 ## Cross-Cutting Concerns Identified
 
 **1. UX Design Compliance (MANDATORY)**
-- **Reference Document:** `_bmad-output/planning-artifacts/ux-design-specification.md`
+- **Reference Document:** `_bmad-output/planning-artifacts/ux-design-specification/index.md`
 - All screens must match wireframes and specifications exactly
 - Material Design 3 component usage as specified
 - Color system, typography, and spacing must follow design tokens
