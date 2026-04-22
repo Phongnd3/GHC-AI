@@ -38,17 +38,26 @@
 
 **Data Fetching Strategy:**
 ```typescript
-// Patient list with 5-min cache
-const { data, error, mutate } = useSWR('/patients', fetcher, {
-  dedupingInterval: 300000,
-  revalidateOnFocus: true
-});
+// My Patients dashboard — active visits with 5-min cache
+// Filter client-side: stopDatetime === null AND providerUuid in encounterProviders
+const { data, error, mutate } = useSWR(
+  '/visit?includeInactive=false&v=full',
+  fetcher,
+  { dedupingInterval: 300000, revalidateOnFocus: true }
+);
 
-// Clinical summary with no cache
-const { data, error } = useSWR(`/patient/${id}/clinical`, fetcher, {
+// Clinical summary — no cache (accuracy critical)
+const { data, error } = useSWR(`/patient/${id}?v=full`, fetcher, {
   dedupingInterval: 0,
   revalidateOnFocus: true
 });
+
+// Vitals — last 3 obs per concept, no cache
+const { data } = useSWR(
+  `/obs?patient=${id}&concept=${VITAL_CONCEPTS.HEART_RATE}&limit=3`,
+  fetcher,
+  { dedupingInterval: 0 }
+);
 ```
 
 **Affects:** All data fetching across the app, cache strategy implementation
@@ -73,6 +82,8 @@ src/services/api/
 ├── patients.ts        # GET /visit, GET /patient/{id}
 └── types.ts           # TypeScript interfaces for API responses
 ```
+
+> **MANDATORY:** All TypeScript types in `types.ts` must be derived from the domain model defined in `_bmad-output/planning-artifacts/architecture/domain-model.md`, which is sourced from `docs/reverse-engineering/01-domain-logic/`. Do not invent types — use the analysed schemas.
 
 **Axios Interceptor Configuration:**
 ```typescript
@@ -580,10 +591,11 @@ src/
 │   ├── spacing.ts         # 8dp grid system
 │   └── theme.ts           # Combined MD3 theme
 │
-├── types/                 # TypeScript type definitions
-│   ├── patient.ts         # Patient, Visit types
-│   ├── clinical.ts        # Medication, Allergy, Vitals types
-│   └── api.ts             # API request/response types
+├── types/                 # TypeScript type definitions (derived from domain-model.md)
+│   ├── patient.ts         # Patient, PatientName, PatientIdentifier types
+│   ├── visit.ts           # Visit, Encounter, EncounterProvider, Observation types
+│   ├── clinical.ts        # Medication (Order), Allergy, Vital types
+│   └── api.ts             # API request/response types (SessionResponse, etc.)
 │
 ├── utils/                 # Utility functions
 │   ├── errorHandler.ts    # Error mapping to user messages

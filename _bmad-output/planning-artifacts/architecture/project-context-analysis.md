@@ -44,6 +44,15 @@ The app integrates with existing OpenMRS O3 backend via REST APIs with no backen
 - Session-based authentication via `/session` endpoint
 - API endpoints: `/visit`, `/patient`, `/order`, `/allergy`, `/obs`
 - JSON data format
+- **Domain model defined in:** `docs/reverse-engineering/01-domain-logic/` — all type definitions, business rules, and API shapes must follow these documents
+
+**Domain Model Constraints (from 01-domain-logic analysis):**
+- Active visit = `stopDatetime === null`; "My Patients" requires filtering by doctor's provider UUID in `encounter.encounterProviders`
+- Patient display must use `preferred: true` identifier and name; voided and deceased patients must be excluded
+- Allergy empty state is clinically significant: distinguish "no allergies" (empty array) from "not assessed" (null)
+- Vitals: fetch last 3 obs per concept using standard CIEL concept UUIDs (confirm per installation)
+- Session response includes `currentProvider.uuid` — required for all patient filtering logic
+- Medications: active drug orders only (`voided === false`, not expired)
 
 **Platform Constraints:**
 - Android-only for Phase 1 (iOS future consideration)

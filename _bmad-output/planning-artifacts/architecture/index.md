@@ -7,7 +7,12 @@
 inputDocuments: [
 "_bmad-output/planning-artifacts/prd/index.md",
 "_bmad-output/planning-artifacts/ux-design-specification/index.md",
-"docs/reverse-engineering/00-system-overview/system-architecture-survey.md"
+"docs/reverse-engineering/00-system-overview/system-architecture-survey.md",
+"docs/reverse-engineering/01-domain-logic/system-glossary.md",
+"docs/reverse-engineering/01-domain-logic/patient-entity-analysis.md",
+"docs/reverse-engineering/01-domain-logic/visit-entity-analysis.md",
+"docs/reverse-engineering/01-domain-logic/appointment-entity-analysis.md",
+"docs/reverse-engineering/01-domain-logic/integrated-workflow-map.md"
 ]
 workflowType: 'architecture'
 project_name: 'GHC-AI'
@@ -29,6 +34,12 @@ status: 'COMPLETE'](#stepscompleted-1-2-3-4-5-6-7-inputdocuments-bmad-outputplan
     - [Requirements Overview](./project-context-analysis.md#requirements-overview)
     - [Technical Constraints & Dependencies](./project-context-analysis.md#technical-constraints-dependencies)
     - [Cross-Cutting Concerns Identified](./project-context-analysis.md#cross-cutting-concerns-identified)
+  - [Domain Model](./domain-model.md)
+    - [Core Entities](./domain-model.md#core-entities)
+    - [TypeScript Type Definitions](./domain-model.md#typescript-type-definitions)
+    - [Business Rules](./domain-model.md#business-rules)
+    - [API Endpoint Reference](./domain-model.md#api-endpoint-reference)
+    - [Integrated Workflow: Patient Journey](./domain-model.md#integrated-workflow-patient-journey)
   - [Starter Template Evaluation](./starter-template-evaluation.md)
     - [Primary Technology Domain](./starter-template-evaluation.md#primary-technology-domain)
     - [Starter Options Considered](./starter-template-evaluation.md#starter-options-considered)
