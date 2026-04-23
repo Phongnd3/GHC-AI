@@ -1,7 +1,1 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
-
-set -e  # die on error
-
-yarn lint-staged --no-stash
-yarn turbo run extract-translations
+npx lint-staged --config ghc-ai-doctor-app/package.json
