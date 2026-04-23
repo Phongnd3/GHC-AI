@@ -65,7 +65,7 @@ Epic 4 (Clinical Summary) ──┘
 | 2.1 | Doctor Login with OpenMRS Credentials | 🔴 Not Started | - | POST /session, SecureStore |
 | 2.2 | Handle Invalid Login Credentials | 🔴 Not Started | - | 401 error handling |
 | 2.3 | Handle Network Errors During Login | 🔴 Not Started | - | Retry mechanism |
-| 2.4 | Automatic Session Timeout After 30 Minutes | 🔴 Not Started | - | Inactivity timer |
+| 2.4 | Automatic Session Timeout After 30 Minutes | 🟡 Ready for Dev | - | Inactivity timer |
 | 2.5 | Prevent Screenshots on Clinical Screens | 🔴 Not Started | - | expo-screen-capture |
 | 2.6 | Doctor Logout with Confirmation | 🔴 Not Started | - | DELETE /session |
 | 2.7 | Session Persistence Across App Restarts | 🔴 Not Started | - | SecureStore validation |
