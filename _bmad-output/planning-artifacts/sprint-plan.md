@@ -35,9 +35,9 @@ Epic 4 (Clinical Summary) ──┘
 | Story | Title | Status | Assignee | Notes |
 |-------|-------|--------|----------|-------|
 | 1.1 | Initialize Expo Project with TypeScript and Expo Router | ✅ Done | - | Expo SDK 55, TypeScript, Expo Router |
-| 1.2 | Configure Development Tooling (ESLint, Prettier, Husky) | 🔴 Not Started | - | Code quality foundation |
-| 1.3 | Set Up Testing Infrastructure (Jest + RNTL) | 🔴 Not Started | - | 90% API, 80% UI coverage targets |
-| 1.4 | Implement Theme System (Colors, Typography, Spacing) | 🔴 Not Started | - | OpenMRS O3 brand, 8dp grid |
+| 1.2 | Configure Development Tooling (ESLint, Prettier, Husky) | ✅ Done | - | Code quality foundation |
+| 1.3 | Set Up Testing Infrastructure (Jest + RNTL) | ✅ Done | - | 90% API, 80% UI coverage targets |
+| 1.4 | Implement Theme System (Colors, Typography, Spacing) | ✅ Done | - | OpenMRS O3 brand, 8dp grid |
 | 1.5 | Configure API Client (Axios with Interceptors) | 🔴 Not Started | - | Auth injection, 401 handling |
 | 1.6 | Implement Centralized Error Handler | 🔴 Not Started | - | User-friendly error mapping |
 | 1.7 | Create Base UI Components (EmptyState, LoadingSkeleton) | 🔴 Not Started | - | Reusable patterns |
@@ -166,9 +166,9 @@ Epic 4 (Clinical Summary) ──┘
 
 | Status | Count | Percentage |
 |--------|-------|------------|
-| 🔴 Not Started | 33 | 100% |
+| 🔴 Not Started | 29 | 88% |
 | 🟡 In Progress | 0 | 0% |
-| 🟢 Complete | 0 | 0% |
+| 🟢 Complete | 4 | 12% |
 | 🔵 Blocked | 0 | 0% |
 | **Total Stories** | **33** | **100%** |
 
@@ -176,7 +176,7 @@ Epic 4 (Clinical Summary) ──┘
 
 | Epic | Status | Stories Complete | Progress |
 |------|--------|------------------|----------|
-| Epic 1: Foundation | 🔴 Not Started | 0/8 | 0% |
+| Epic 1: Foundation | 🟡 In Progress | 4/8 | 50% |
 | Epic 2: Authentication | 🔴 Not Started | 0/7 | 0% |
 | Epic 3: Dashboard | 🔴 Not Started | 0/6 | 0% |
 | Epic 4: Clinical Summary | 🔴 Not Started | 0/7 | 0% |
