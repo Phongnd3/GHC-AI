@@ -1,10 +1,10 @@
 # Story 1.8: Configure Environment Variables and Constants
 
-**Status:** ready-for-dev  
+**Status:** completed  
 **Epic:** 1 - Project Foundation & Core Infrastructure  
 **Story ID:** 1.8  
 **Priority:** P0 - Blocking all environment-specific configuration  
-**Depends On:** Story 1.5 (Configure API Client) ✅ ready-for-dev
+**Depends On:** Story 1.5 (Configure API Client) ✅ completed
 
 ---
 
@@ -447,27 +447,42 @@ const response = await apiClient.get('/patient/123');
 
 ### Agent Model Used
 
-_To be filled by dev agent_
+Claude 3.7 Sonnet (2026-04-23)
 
 ### Debug Log References
 
-_To be filled by dev agent_
+N/A - Implementation completed successfully without issues
 
 ### Completion Notes List
 
-- [ ] Environment files created (.env.development, .env.staging, .env.production)
-- [ ] app.config.js configured with dynamic environment loading
-- [ ] Typed environment module created (src/config/env.ts)
-- [ ] API client updated to use environment variables
-- [ ] Environment switching tested and verified
-- [ ] Documentation created (.env.example, README)
-- [ ] All acceptance criteria verified
+- [x] Environment files created (.env.development, .env.staging, .env.production)
+- [x] app.config.js configured with dynamic environment loading
+- [x] Typed environment module created (src/config/env.ts)
+- [x] API client updated to use environment variables
+- [x] Environment switching tested and verified
+- [x] Documentation created (.env.example, README)
+- [x] All acceptance criteria verified
 
 ### File List
 
-_To be filled by dev agent_
+**Created:**
+- `ghc-ai-doctor-app/.env.development` - Development environment variables
+- `ghc-ai-doctor-app/.env.staging` - Staging environment variables
+- `ghc-ai-doctor-app/.env.production` - Production environment variables
+- `ghc-ai-doctor-app/.env.example` - Environment template with documentation
+- `ghc-ai-doctor-app/app.config.js` - Dynamic Expo configuration
+
+**Modified:**
+- `ghc-ai-doctor-app/src/config/env.ts` - Updated to use expo-constants with typed configuration
+- `ghc-ai-doctor-app/src/config/index.ts` - Export all environment constants
+- `ghc-ai-doctor-app/src/services/api/client.ts` - Use named environment constants
+- `ghc-ai-doctor-app/README.md` - Added environment configuration documentation
+
+**Deleted:**
+- `ghc-ai-doctor-app/app.json` - Replaced by app.config.js (dynamic configuration)
 
 ---
 
-**Story Status:** ready-for-dev  
-**Next Step:** Run `bmad-dev-story` to implement this story
+**Story Status:** completed  
+**Completed:** 2026-04-23  
+**Next Step:** Story 1.8 is complete. Environment configuration is now fully functional with support for development, staging, and production environments.

@@ -2,11 +2,11 @@ import axios from 'axios';
 import type { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
-import { ENV } from '@/config/env';
+import { API_BASE_URL, REQUEST_TIMEOUT } from '@/config/env';
 
 export const apiClient = axios.create({
-  baseURL: ENV.API_BASE_URL,
-  timeout: ENV.REQUEST_TIMEOUT,
+  baseURL: API_BASE_URL,
+  timeout: REQUEST_TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
   },
