@@ -1,23 +1,57 @@
 // src/utils/errorHandler.ts
-// Stub implementation for Story 1.3 testing infrastructure
-// Full implementation in Story 1.6
 
-export function mapErrorToUserMessage(error: any): string {
-  if (!error.response) {
-    return 'No internet connection. Please check your WiFi.';
+export enum ErrorType {
+  NETWORK_ERROR = 'NETWORK_ERROR',
+  AUTH_ERROR = 'AUTH_ERROR',
+  SERVER_ERROR = 'SERVER_ERROR',
+  TIMEOUT_ERROR = 'TIMEOUT_ERROR',
+  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
+}
+
+export interface MappedError {
+  message: string;
+  type: ErrorType;
+}
+
+export function mapErrorToUserMessage(error: any): MappedError {
+  // Timeout error (Axios sets code to ECONNABORTED)
+  if (error.code === 'ECONNABORTED') {
+    return {
+      message: 'Request timed out. Please try again.',
+      type: ErrorType.TIMEOUT_ERROR,
+    };
   }
 
-  const status = error.response.status;
-
-  switch (status) {
-    case 401:
-      return 'Session expired. Please log in again.';
-    case 408:
-      return 'Request timed out. Please try again.';
-    case 500:
-    case 503:
-      return 'Server unavailable. Please try again.';
-    default:
-      return 'Something went wrong. Please try again.';
+  // Network error (request made but no response received)
+  if (!error.response && error.request) {
+    return {
+      message: 'No internet connection. Please check your network and try again.',
+      type: ErrorType.NETWORK_ERROR,
+    };
   }
+
+  // Server responded with error status
+  if (error.response) {
+    const status = error.response.status;
+
+    if (status === 401) {
+      return {
+        message: 'Session expired. Please log in again.',
+        type: ErrorType.AUTH_ERROR,
+      };
+    }
+
+    if (status === 500 || status === 503) {
+      return {
+        message: 'Server unavailable. Please try again later.',
+        type: ErrorType.SERVER_ERROR,
+      };
+    }
+  }
+
+  // Fallback for unknown errors
+  return {
+    message: 'An unexpected error occurred. Please try again.',
+    type: ErrorType.UNKNOWN_ERROR,
+  };
 }
