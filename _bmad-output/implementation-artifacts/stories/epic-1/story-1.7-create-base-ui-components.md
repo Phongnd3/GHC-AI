@@ -419,25 +419,35 @@ return <PatientList data={data} />;
 
 ### Agent Model Used
 
-_To be filled by dev agent_
+Claude 3.7 Sonnet (via Kiro CLI)
 
 ### Debug Log References
 
-_To be filled by dev agent_
+- Test execution: All tests passing (6/6)
+- Coverage: 100% for both EmptyState and LoadingSkeleton components
+- Note: Icon library warnings in tests are expected (icons work in runtime with @expo/vector-icons)
 
 ### Completion Notes List
 
-- [ ] EmptyState component created with all props
-- [ ] LoadingSkeleton component created with animation
-- [ ] Component tests written with 80%+ coverage
-- [ ] Demo screen created and accessible
-- [ ] All acceptance criteria verified
+- [x] EmptyState component created with all props
+- [x] LoadingSkeleton component created with animation
+- [x] Component tests written with 100% coverage (exceeds 80% requirement)
+- [x] Demo screen created and accessible at `/demo-components`
+- [x] All acceptance criteria verified
 
 ### File List
 
-_To be filled by dev agent_
+**Created Files:**
+- `ghc-ai-doctor-app/src/components/EmptyState.tsx` - Empty state component with icon, message, and optional action
+- `ghc-ai-doctor-app/src/components/LoadingSkeleton.tsx` - Loading skeleton with pulse animation
+- `ghc-ai-doctor-app/src/components/__tests__/EmptyState.test.tsx` - EmptyState component tests (4 tests)
+- `ghc-ai-doctor-app/src/components/__tests__/LoadingSkeleton.test.tsx` - LoadingSkeleton component tests (2 tests)
+- `ghc-ai-doctor-app/src/app/demo-components.tsx` - Demo screen showing both components
+
+**Modified Files:**
+- `ghc-ai-doctor-app/src/components/index.ts` - Added exports for EmptyState and LoadingSkeleton
 
 ---
 
-**Story Status:** ready-for-dev  
-**Next Step:** Run `bmad-dev-story` to implement this story
+**Story Status:** ✅ completed  
+**Completion Date:** 2026-04-23
