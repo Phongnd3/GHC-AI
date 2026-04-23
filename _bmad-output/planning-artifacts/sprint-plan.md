@@ -34,7 +34,7 @@ Epic 4 (Clinical Summary) ──┘
 
 | Story | Title | Status | Assignee | Notes |
 |-------|-------|--------|----------|-------|
-| 1.1 | Initialize Expo Project with TypeScript and Expo Router | 🔴 Not Started | - | Expo SDK 55, TypeScript, Expo Router |
+| 1.1 | Initialize Expo Project with TypeScript and Expo Router | ✅ Done | - | Expo SDK 55, TypeScript, Expo Router |
 | 1.2 | Configure Development Tooling (ESLint, Prettier, Husky) | 🔴 Not Started | - | Code quality foundation |
 | 1.3 | Set Up Testing Infrastructure (Jest + RNTL) | 🔴 Not Started | - | 90% API, 80% UI coverage targets |
 | 1.4 | Implement Theme System (Colors, Typography, Spacing) | 🔴 Not Started | - | OpenMRS O3 brand, 8dp grid |

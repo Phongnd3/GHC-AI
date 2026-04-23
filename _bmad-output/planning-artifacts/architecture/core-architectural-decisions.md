@@ -1,5 +1,22 @@
 # Core Architectural Decisions
 
+## Lessons Learned
+
+### Expo SDK 54 Setup (Story 1.1 - 2026-04-23)
+
+**Issue:** `babel-preset-expo` must be explicitly installed as devDependency, even though it's bundled with Expo SDK.
+
+**Root Cause:** Metro bundler's worker processes cannot resolve `babel-preset-expo` when it's only a transitive dependency of `expo`. The preset must be in the project's direct `devDependencies` for Babel's module resolution to work correctly.
+
+**Solution:**
+```bash
+npm install --save-dev babel-preset-expo --legacy-peer-deps
+```
+
+**Prevention:** Always include `babel-preset-expo` in `devDependencies` when initializing Expo projects, regardless of SDK version.
+
+---
+
 ## Decision Priority Analysis
 
 **Critical Decisions (Block Implementation):**
