@@ -632,6 +632,9 @@ Successfully configured Jest v29 with React Native Testing Library v13 and jest-
    - `@expo/vector-icons` mock will be added in Story 1.7 (Base UI Components)
    - Current setup only mocks expo-router (which is installed)
 
+3. **Post-Implementation Fixes**
+   - [2026-04-23] Expo SDK 54 compatibility — Fixed babel-preset-expo (55.0.18→~54.0.10), jest-expo (55.0.16→~54.0.17) version mismatches inherited from Story 1.1 [package.json:devDependencies]
+
 ### Next Steps
 
 - Story 1.4: Implement Theme System (can now write tests for theme utilities)

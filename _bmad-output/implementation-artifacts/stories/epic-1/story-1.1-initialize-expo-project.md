@@ -304,6 +304,9 @@ Claude 3.7 Sonnet (2026-04-23)
 **Decision Needed:**
 - [x] [Review][Decision] Expo Router won't discover src/app/ directory — RESOLVED: Added `expo.router.root: "src"` to app.json [app.json, src/app/]
 
+**Post-Implementation Fixes:**
+- [x] [2026-04-23] Expo SDK 54 compatibility — Fixed babel-preset-expo (55.0.18→~54.0.10), jest-expo (55.0.16→~54.0.17), @eslint/js (10.0.1→^8.57.1) version mismatches causing npm start errors [package.json:devDependencies]
+
 **Patches Applied:**
 - [x] [Review][Patch] Dual entry point conflict — expo-router/entry vs index.ts — FIXED: Removed App.tsx and index.ts legacy entry points [package.json:main, index.ts]
 - [x] [Review][Patch] SDK version mismatch — Expo 54 with SDK 55 packages — FIXED: Aligned all packages to SDK 54 compatible versions [package.json:dependencies]
