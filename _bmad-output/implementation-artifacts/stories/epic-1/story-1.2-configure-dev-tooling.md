@@ -1,6 +1,6 @@
 # Story 1.2: Configure Development Tooling (ESLint, Prettier, Husky)
 
-**Status:** ready-for-dev  
+**Status:** ✅ complete  
 **Epic:** 1 - Project Foundation & Core Infrastructure  
 **Story ID:** 1.2  
 **Priority:** P0 - Blocking all other work  
@@ -407,3 +407,119 @@ This story is complete when:
 **Ready for Implementation:** Yes  
 **Blocking Stories:** Story 1.3 (Testing Infrastructure) — lint-staged Jest integration deferred to 1.3  
 **Blocked By:** Story 1.1 ✅ Complete
+
+---
+
+## Implementation Record
+
+**Completed:** 2026-04-23  
+**Commit:** `439fd9a3` - "chore: configure ESLint, Prettier, and Husky pre-commit hooks (Story 1.2)"
+
+### What Was Implemented
+
+1. **ESLint Configuration**
+   - Installed ESLint v8.57.1 (legacy config support for React Native ecosystem)
+   - Installed TypeScript ESLint plugins: `@typescript-eslint/eslint-plugin`, `@typescript-eslint/parser`
+   - Installed React plugins: `eslint-plugin-react`, `eslint-plugin-react-native`
+   - Installed `eslint-config-prettier` to prevent rule conflicts
+   - Created `.eslintrc.js` with recommended rules for TypeScript, React, and React Native
+   - Configured custom rules:
+     - `react/react-in-jsx-scope: off` (React 17+ JSX transform)
+     - `@typescript-eslint/no-unused-vars: error` (with `_` prefix ignore pattern)
+     - `react-native/no-inline-styles: warn`
+     - `@typescript-eslint/consistent-type-imports: error`
+     - `react-native/no-color-literals: off` (deferred to Story 1.4)
+
+2. **Prettier Configuration**
+   - Installed Prettier v3.8.3
+   - Created `.prettierrc` with project standards:
+     - 100-character line width
+     - Single quotes
+     - Semicolons enabled
+     - ES5 trailing commas
+   - Created `.prettierignore` to exclude build artifacts
+
+3. **Husky + lint-staged**
+   - Installed Husky v9.1.7 and lint-staged v16.4.0
+   - Created `.husky/pre-commit` hook in git root (parent directory)
+   - Configured hook to run `npx lint-staged --config ghc-ai-doctor-app/package.json`
+   - Added `lint-staged` configuration to `package.json`:
+     - Runs `eslint --fix` on staged `.ts`/`.tsx` files
+     - Runs `prettier --write` on staged `.ts`/`.tsx` files
+   - Added `"prepare": "husky"` script to `package.json`
+
+4. **NPM Scripts**
+   - Added `lint`: Run ESLint on all TypeScript files
+   - Added `lint:fix`: Auto-fix ESLint issues
+   - Added `format`: Format all source files with Prettier
+   - Added `type-check`: Run TypeScript compiler in check-only mode
+
+5. **Auto-fixes Applied**
+   - Fixed style property ordering in `src/app/index.tsx` (ESLint auto-fix)
+
+### Verification Results
+
+✅ All acceptance criteria met:
+- `npm run lint` exits with code 0
+- `npm run format` formats all files successfully
+- `npm run type-check` exits with code 0
+- Pre-commit hook runs on `git commit`
+- Pre-commit hook blocks commits with lint errors (verified with test file)
+- All configuration files committed
+
+### Technical Decisions
+
+**ESLint Version Choice:**
+- Initially installed ESLint v10 (latest), but encountered compatibility issues with `eslint-plugin-react` in flat config mode
+- Downgraded to ESLint v8.57.1 for stable legacy config support
+- Used legacy `.eslintrc.js` format instead of flat config (`eslint.config.js`)
+- This aligns with React Native ecosystem best practices and Expo compatibility
+
+**Husky Setup:**
+- Git repository is in parent directory (`/Users/itobeo/code/GHC-AI`)
+- Created `.husky/pre-commit` in git root with path to app's `package.json`
+- Hook command: `npx lint-staged --config ghc-ai-doctor-app/package.json`
+
+**Deferred Items:**
+- Jest integration in lint-staged (Story 1.3 will add testing infrastructure)
+- Re-enabling `react-native/no-color-literals` rule (Story 1.4 will implement theme system)
+
+### Files Created/Modified
+
+**Created:**
+- `ghc-ai-doctor-app/.eslintrc.js`
+- `ghc-ai-doctor-app/.prettierrc`
+- `ghc-ai-doctor-app/.prettierignore`
+- `.husky/pre-commit`
+
+**Modified:**
+- `ghc-ai-doctor-app/package.json` (added scripts and lint-staged config)
+- `ghc-ai-doctor-app/package-lock.json` (new dependencies)
+- `ghc-ai-doctor-app/src/app/index.tsx` (auto-fixed style ordering)
+
+### Dependencies Added
+
+```json
+{
+  "devDependencies": {
+    "@eslint/js": "^9.20.2",
+    "@typescript-eslint/eslint-plugin": "^8.59.0",
+    "@typescript-eslint/parser": "^8.59.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-native": "^5.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.3"
+  }
+}
+```
+
+### Known Issues
+
+None. All tooling working as expected.
+
+### Next Steps
+
+Story 1.3: Setup Testing Infrastructure (Jest, React Native Testing Library)
