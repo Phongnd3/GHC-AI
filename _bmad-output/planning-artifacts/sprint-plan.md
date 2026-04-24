@@ -40,15 +40,15 @@ Epic 4 (Clinical Summary) ──┘
 | 1.4 | Implement Theme System (Colors, Typography, Spacing) | ✅ Done | - | OpenMRS O3 brand, 8dp grid |
 | 1.5 | Configure API Client (Axios with Interceptors) | ✅ Done | - | Auth injection, 401 handling |
 | 1.6 | Implement Centralized Error Handler | ✅ Done | Kiro CLI | User-friendly error mapping |
-| 1.7 | Create Base UI Components (EmptyState, LoadingSkeleton) | 🔴 Not Started | - | Reusable patterns |
-| 1.8 | Configure Environment Variables and Constants | 🔴 Not Started | - | Dev/staging/prod configs |
+| 1.7 | Create Base UI Components (EmptyState, LoadingSkeleton) | ✅ Done | - | Reusable patterns |
+| 1.8 | Configure Environment Variables and Constants | ✅ Done | - | Dev/staging/prod configs |
 
 **Acceptance Criteria for Epic Completion:**
-- [ ] All developers can start feature work immediately
-- [ ] Project runs on Android emulator with hot reload
-- [ ] All tooling (linting, testing, formatting) works
-- [ ] Theme system is complete and documented
-- [ ] API client handles auth and errors correctly
+- [x] All developers can start feature work immediately
+- [x] Project runs on Android emulator with hot reload
+- [x] All tooling (linting, testing, formatting) works
+- [x] Theme system is complete and documented
+- [x] API client handles auth and errors correctly
 
 ---
 
