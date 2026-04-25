@@ -29,6 +29,7 @@
     "expo-constants": "~18.0.13",
     "expo-linking": "~8.0.11",
     "expo-router": "~6.0.23",
+    "expo-screen-capture": "~8.0.9",
     "expo-secure-store": "~15.0.8",
     "expo-status-bar": "~3.0.9",
     "react": "^19.1.0",
@@ -59,6 +60,14 @@
     "prettier": "^3.8.3",
     "react-test-renderer": "^19.1.0",
     "typescript": "~5.9.2"
+  },
+  "overrides": {
+    "@tootallnate/once": "^3.0.1",
+    "postcss": "^8.5.10",
+    "uuid": "^13.0.0",
+    "xcode": {
+      "uuid": "^14.0.0"
+    }
   },
   "private": true
 }
