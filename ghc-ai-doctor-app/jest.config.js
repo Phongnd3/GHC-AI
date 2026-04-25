@@ -7,10 +7,12 @@ module.exports = {
 
   // Module alias resolution — mirrors tsconfig.json paths
   moduleNameMapper: {
+    '^@/components$': '<rootDir>/src/components',
     '^@/components/(.*)$': '<rootDir>/src/components/$1',
     '^@/services/(.*)$': '<rootDir>/src/services/$1',
     '^@/hooks/(.*)$': '<rootDir>/src/hooks/$1',
     '^@/contexts/(.*)$': '<rootDir>/src/contexts/$1',
+    '^@/theme$': '<rootDir>/src/theme',
     '^@/theme/(.*)$': '<rootDir>/src/theme/$1',
     '^@/types/(.*)$': '<rootDir>/src/types/$1',
     '^@/utils/(.*)$': '<rootDir>/src/utils/$1',

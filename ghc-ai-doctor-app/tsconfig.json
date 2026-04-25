@@ -4,10 +4,12 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
+      "@/components": ["src/components"],
       "@/components/*": ["src/components/*"],
       "@/services/*": ["src/services/*"],
       "@/hooks/*": ["src/hooks/*"],
       "@/contexts/*": ["src/contexts/*"],
+      "@/theme": ["src/theme"],
       "@/theme/*": ["src/theme/*"],
       "@/types/*": ["src/types/*"],
       "@/utils/*": ["src/utils/*"],
