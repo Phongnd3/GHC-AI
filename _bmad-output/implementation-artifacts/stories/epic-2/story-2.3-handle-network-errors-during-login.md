@@ -1,6 +1,6 @@
 # Story 2.3: Handle Network Errors During Login
 
-**Status:** ready-for-dev  
+**Status:** done  
 **Epic:** 2 - Authentication & Session Management  
 **Story ID:** 2.3  
 **Priority:** P1 - Critical UX for offline/poor-connectivity scenarios
@@ -32,21 +32,21 @@ So that I know the problem is with connectivity, not my credentials.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Distinguish network errors from auth errors in login screen (AC: #1)
-  - [ ] Import `mapErrorToUserMessage` and `ErrorType` from `@/utils/errorHandler`
-  - [ ] In `handleLogin()` catch block, check for `ErrorType.NETWORK_ERROR`
-  - [ ] Set `errorMessage` to `"No internet connection. Please check your WiFi."` on network error
-  - [ ] Set `isNetworkError` state flag to `true` to conditionally render Retry button
+- [x] Task 1: Distinguish network errors from auth errors in login screen (AC: #1)
+  - [x] Import `mapErrorToUserMessage` and `ErrorType` from `@/utils/errorHandler`
+  - [x] In `handleLogin()` catch block, check for `ErrorType.NETWORK_ERROR`
+  - [x] Set `errorMessage` to `"No internet connection. Please check your WiFi."` on network error
+  - [x] Set `isNetworkError` state flag to `true` to conditionally render Retry button
 
-- [ ] Task 2: Add Retry button for network errors (AC: #1, #2)
-  - [ ] Add `isNetworkError` boolean state (default `false`)
-  - [ ] Render a `Button` (mode="outlined") labeled "Retry" below the error message when `isNetworkError` is `true`
-  - [ ] Wire Retry button to call `handleLogin()` directly (reuses existing credentials)
-  - [ ] Hide Retry button when `isNetworkError` is `false`
+- [x] Task 2: Add Retry button for network errors (AC: #1, #2)
+  - [x] Add `isNetworkError` boolean state (default `false`)
+  - [x] Render a `Button` (mode="outlined") labeled "Retry" below the error message when `isNetworkError` is `true`
+  - [x] Wire Retry button to call `handleLogin()` directly (reuses existing credentials)
+  - [x] Hide Retry button when `isNetworkError` is `false`
 
-- [ ] Task 3: Reset network error state on user interaction (AC: #1)
-  - [ ] Clear `isNetworkError` and `errorMessage` when user edits username or password field
-  - [ ] Clear `isNetworkError` when a new login attempt starts (top of `handleLogin`)
+- [x] Task 3: Reset network error state on user interaction (AC: #1)
+  - [x] Clear `isNetworkError` and `errorMessage` when user edits username or password field
+  - [x] Clear `isNetworkError` when a new login attempt starts (top of `handleLogin`)
 
 ---
 
@@ -475,8 +475,61 @@ This story is complete when:
 
 ---
 
-**Story Created:** 2026-04-25  
-**Ready for Implementation:** Yes  
-**Blocking Stories:** None  
-**Blocked By:** Story 2.2 (error handling scaffold in login screen) — must be complete  
-**Estimated Effort:** 1-2 hours
+## Dev Agent Record
+
+### Implementation Plan
+
+All 3 tasks implemented in a single pass on `src/app/index.tsx`:
+
+1. **Task 1 — Network error detection** — Added `isNetworkError` state, extended error handling in `handleLogin()` catch block to check for `ErrorType.NETWORK_ERROR`, override message to `"No internet connection. Please check your WiFi."` for network errors, set `isNetworkError` flag to control Retry button visibility.
+
+2. **Task 2 — Retry button implementation** — Added conditional rendering of `Button` (mode="outlined") with testID="retry-button" below the Login button when `isNetworkError` is true. Retry button calls `handleLogin()` directly, reusing existing credentials from state.
+
+3. **Task 3 — State reset on interaction** — Extended `handleUsernameChange`/`handlePasswordChange` to clear `isNetworkError` flag along with error message. Added `setIsNetworkError(false)` at the top of `handleLogin()` to reset state on new attempts.
+
+**Key decision:** Network error message is overridden to be WiFi-specific (`"No internet connection. Please check your WiFi."`) while maintaining the centralized error handler pattern. The Retry button only appears for `NETWORK_ERROR` type, not for auth or server errors.
+
+### Completion Notes
+
+- ✅ Task 1: Network error detection — `ErrorType.NETWORK_ERROR` detected, WiFi-specific message displayed, `isNetworkError` flag controls UI
+- ✅ Task 2: Retry button — Conditional `Button` (mode="outlined") renders below Login button, calls `handleLogin()` directly
+- ✅ Task 3: State reset — `isNetworkError` cleared on field edits and new login attempts
+- ✅ 8 new tests added covering network error scenarios, retry functionality, and state clearing
+- ✅ 86 total tests pass, 0 regressions
+- ✅ TypeScript: 0 errors | Lint: 0 errors (4 pre-existing warnings)
+- ✅ AC1 & AC2 satisfied: network errors show WiFi message + Retry button, retry works with existing credentials
+
+---
+
+## File List
+
+### Modified Files
+- `ghc-ai-doctor-app/src/app/index.tsx` — added `isNetworkError` state, extended error handling for `NETWORK_ERROR` type, added conditional Retry button, updated state clearing functions
+- `ghc-ai-doctor-app/src/app/__tests__/index.test.tsx` — added 8 new network error tests, updated existing network error test to expect WiFi-specific message
+
+---
+
+## Change Log
+
+- 2026-04-26: Implemented Story 2.3 - Handle Network Errors During Login
+  - Added `isNetworkError` state and network error detection in `handleLogin()`
+  - Added conditional Retry button (mode="outlined") for network errors only
+  - Extended state clearing to reset network error flag on user interaction
+  - 8 new component tests covering all network error scenarios and retry functionality
+
+---
+
+## Senior Developer Review (AI)
+
+**Review Date:** 2026-04-26
+**Outcome:** Changes Requested
+**Layers:** Blind Hunter ✅ | Edge Case Hunter ✅ | Acceptance Auditor ✅
+
+### Action Items
+
+- [x] [Review][Patch] Test name `'should pass non-auth errors through unchanged'` is misleading — NETWORK_ERROR message IS overridden to WiFi-specific text [`ghc-ai-doctor-app/src/app/__tests__/index.test.tsx`]
+- [x] [Review][Patch] Retry button `disabled={isLoading}` allows whitespace-only credentials to silently no-op — sync with Login button guard [`ghc-ai-doctor-app/src/app/index.tsx`]
+- [x] [Review][Patch] Retry test does not assert Retry button disappears after successful retry [`ghc-ai-doctor-app/src/app/__tests__/index.test.tsx`]
+- [x] [Review][Defer] `isNetworkError` / `errorMessage` state coupling — no current code path triggers divergence but latent fragility [`ghc-ai-doctor-app/src/app/index.tsx`] — deferred, pre-existing pattern
+- [x] [Review][Defer] `TIMEOUT_ERROR` shows no Retry button — spec scopes Retry to `NETWORK_ERROR` only; separate story needed [`ghc-ai-doctor-app/src/utils/errorHandler.ts`] — deferred, out of scope
+- [x] [Review][Defer] Login button `disabled` uses `!username || !password` without `.trim()` — pre-existing from Story 2.2 [`ghc-ai-doctor-app/src/app/index.tsx`] — deferred, pre-existing
