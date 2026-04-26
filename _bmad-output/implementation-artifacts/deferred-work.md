@@ -33,3 +33,7 @@ This file tracks issues identified during code reviews that are deferred to late
 ## Deferred from: code review of story-2.5-prevent-screenshots-clinical-screens (2026-04-26)
 
 - **FLAG_SECURE set on login screen window via deep-link into `(auth)/` before auth resolves** — If a deep link targets an `(auth)/` route and Expo Router mounts `AuthLayout` before `useAuth` resolves `isAuthenticated`, `usePreventScreenCapture()` fires and FLAG_SECURE is set. If auth then fails and the router redirects to `/`, the login screen renders inside the same Android window with FLAG_SECURE active until `AuthLayout` fully unmounts. Requires Expo Router navigation architecture change to fix; deferred as out of scope for this story.
+
+## Deferred from: code review of story-2.6-doctor-logout-with-confirmation (2026-04-26)
+
+- **State update on unmounted component after `router.replace('/')`** — `handleConfirmLogout`'s `finally` block calls `setIsLoggingOut(false)` and `setShowLogoutDialog(false)` after `router.replace('/')` has already navigated away. React 19 handles this gracefully (no crash, warning suppressed), but it is technically a state update on an unmounted component. Fixing requires an `isMounted` ref pattern for minimal practical gain. Deferred to a future hardening pass.
