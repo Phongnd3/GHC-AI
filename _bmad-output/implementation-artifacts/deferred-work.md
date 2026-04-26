@@ -25,3 +25,7 @@ This file tracks issues identified during code reviews that are deferred to late
 - **`isNetworkError` / `errorMessage` state coupling** — both states are always set together, but the clear guard in change handlers only checks `if (errorMessage)`. If a future change clears `errorMessage` without clearing `isNetworkError`, the Retry button would persist stale. Consider a single `errorState: { message: string; type: ErrorType | null }` object to keep them atomic.
 - **`TIMEOUT_ERROR` shows no Retry button** — a request timeout is functionally a network failure from the user's perspective, but the spec scopes Retry to `NETWORK_ERROR` only. A future UX improvement story should consider showing Retry for `TIMEOUT_ERROR` as well.
 - **Login button `disabled` uses `!username || !password` without `.trim()`** — pre-existing from Story 2.2. The `handleLogin` guard uses `.trim()`, creating a mismatch where whitespace-only credentials enable the Login button but pressing it silently no-ops. Fix in a future cleanup pass.
+
+## Deferred from: code review of story-2.4-automatic-session-timeout (2026-04-26)
+
+- **`JSON.parse(userJson)` blind-cast without schema validation in `checkSession()`** — pre-existing in `AuthContext.tsx` from Story 2.1. A corrupt but parseable JSON object would silently set `user` to an unexpected shape. Consider adding a runtime type guard (e.g., checking for required fields like `uuid` and `username`) in a future hardening pass.

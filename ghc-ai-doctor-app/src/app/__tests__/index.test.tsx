@@ -481,4 +481,43 @@ describe('LoginScreen', () => {
       expect(queryByTestId('retry-button')).toBeNull();
     });
   });
+
+  // ── Story 2.4: Session Expiry Message Display ─────────────────────────────
+
+  it('should display session expired message when redirected from timeout', () => {
+    (useAuth as jest.Mock).mockReturnValue({
+      login: mockLogin,
+      sessionExpiredMessage: 'Session expired due to inactivity. Please log in again.',
+    });
+
+    const { getByText, getByTestId } = render(<LoginScreen />);
+
+    expect(getByText('Session expired due to inactivity. Please log in again.')).toBeTruthy();
+    expect(getByTestId('session-expired-message')).toBeTruthy();
+  });
+
+  it('should not display expiry message when null', () => {
+    (useAuth as jest.Mock).mockReturnValue({
+      login: mockLogin,
+      sessionExpiredMessage: null,
+    });
+
+    const { queryByText, queryByTestId } = render(<LoginScreen />);
+
+    expect(queryByText('Session expired due to inactivity. Please log in again.')).toBeNull();
+    expect(queryByTestId('session-expired-message')).toBeNull();
+  });
+
+  it('should display session expired message above the title', () => {
+    (useAuth as jest.Mock).mockReturnValue({
+      login: mockLogin,
+      sessionExpiredMessage: 'Session expired due to inactivity. Please log in again.',
+    });
+
+    const { getByText } = render(<LoginScreen />);
+
+    // Both should be present
+    expect(getByText('Session expired due to inactivity. Please log in again.')).toBeTruthy();
+    expect(getByText('GHC-AI Doctor')).toBeTruthy();
+  });
 });

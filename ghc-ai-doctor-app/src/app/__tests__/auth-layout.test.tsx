@@ -23,6 +23,10 @@ jest.mock('expo-router', () => ({
     replace: jest.fn(),
     back: jest.fn(),
   })),
+  useNavigationContainerRef: jest.fn(() => ({
+    current: null, // null triggers the early-return guard in the useEffect
+    addListener: jest.fn(),
+  })),
 }));
 
 // Mock LoadingSkeleton — require() is used because jest.mock factories cannot
@@ -50,6 +54,7 @@ describe('AuthLayout', () => {
     (useAuth as jest.Mock).mockReturnValue({
       isAuthenticated: false,
       isLoading: true,
+      resetInactivityTimer: jest.fn(),
     });
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -63,6 +68,7 @@ describe('AuthLayout', () => {
     (useAuth as jest.Mock).mockReturnValue({
       isAuthenticated: false,
       isLoading: false,
+      resetInactivityTimer: jest.fn(),
     });
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -78,6 +84,7 @@ describe('AuthLayout', () => {
     (useAuth as jest.Mock).mockReturnValue({
       isAuthenticated: true,
       isLoading: false,
+      resetInactivityTimer: jest.fn(),
     });
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports

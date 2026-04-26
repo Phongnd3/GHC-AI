@@ -9,7 +9,7 @@ import { Typography } from '@/theme/typography';
 
 export default function LoginScreen() {
   const theme = useTheme();
-  const { login } = useAuth();
+  const { login, sessionExpiredMessage } = useAuth();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -76,6 +76,17 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.content}>
+        {sessionExpiredMessage && (
+          <HelperText
+            type="error"
+            visible={!!sessionExpiredMessage}
+            style={styles.expiryMessage}
+            testID="session-expired-message"
+          >
+            {sessionExpiredMessage}
+          </HelperText>
+        )}
+
         <Text style={[styles.title, { color: theme.colors.onBackground }]} variant="headlineLarge">
           GHC-AI Doctor
         </Text>
@@ -156,6 +167,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: Spacing.xxl,
+  },
+  expiryMessage: {
+    marginBottom: Spacing.lg,
+    textAlign: 'center',
   },
   input: {
     marginBottom: Spacing.lg,

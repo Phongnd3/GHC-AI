@@ -17,6 +17,7 @@ module.exports = {
     '^@/types/(.*)$': '<rootDir>/src/types/$1',
     '^@/utils/(.*)$': '<rootDir>/src/utils/$1',
     '^@/config/(.*)$': '<rootDir>/src/config/$1',
+    '^@/constants/(.*)$': '<rootDir>/src/constants/$1',
   },
 
   // Allow Expo and React Native packages to be transformed

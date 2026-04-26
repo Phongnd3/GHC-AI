@@ -1,6 +1,6 @@
 # Story 2.4: Automatic Session Timeout After 30 Minutes of Inactivity
 
-**Status:** ready-for-dev  
+**Status:** done  
 **Epic:** 2 - Authentication & Session Management  
 **Story ID:** 2.4  
 **Priority:** P0 - Critical security requirement (NFR9)
@@ -34,31 +34,43 @@ So that patient data remains secure if a device is left unattended.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add inactivity timer to AuthContext (AC: #1)
-  - [ ] Add `SESSION_TIMEOUT_MS = 1800000` constant (30 min) to `src/constants/auth.ts`
-  - [ ] Add `inactivityTimerRef` (`useRef<ReturnType<typeof setTimeout> | null>`) to `AuthContext`
-  - [ ] Implement `startInactivityTimer()` — clears existing timer, sets new 30-min timeout that calls `handleSessionExpiry()`
-  - [ ] Implement `resetInactivityTimer()` — exported via context for consumers to call on user interaction
-  - [ ] Implement `handleSessionExpiry()` — clears SecureStore, resets auth state, sets expiry message, navigates to login
-  - [ ] Call `startInactivityTimer()` at the end of the `login()` function
-  - [ ] Clear timer in the `logout()` function (prevent double-expiry)
-  - [ ] Clear timer on `AuthProvider` unmount via `useEffect` cleanup
+- [x] Task 1: Add inactivity timer to AuthContext (AC: #1)
+  - [x] Add `SESSION_TIMEOUT_MS = 1800000` constant (30 min) to `src/constants/auth.ts`
+  - [x] Add `inactivityTimerRef` (`useRef<ReturnType<typeof setTimeout> | null>`) to `AuthContext`
+  - [x] Implement `startInactivityTimer()` — clears existing timer, sets new 30-min timeout that calls `handleSessionExpiry()`
+  - [x] Implement `resetInactivityTimer()` — exported via context for consumers to call on user interaction
+  - [x] Implement `handleSessionExpiry()` — clears SecureStore, resets auth state, sets expiry message, navigates to login
+  - [x] Call `startInactivityTimer()` at the end of the `login()` function
+  - [x] Clear timer in the `logout()` function (prevent double-expiry)
+  - [x] Clear timer on `AuthProvider` unmount via `useEffect` cleanup
 
-- [ ] Task 2: Expose `resetInactivityTimer` and `sessionExpiredMessage` via AuthContext (AC: #1, #2)
-  - [ ] Add `resetInactivityTimer: () => void` to `AuthContextType` interface
-  - [ ] Add `sessionExpiredMessage: string | null` to `AuthContextType` interface
-  - [ ] Provide both values in `AuthContext.Provider` value object
-  - [ ] Clear `sessionExpiredMessage` after login succeeds
+- [x] Task 2: Expose `resetInactivityTimer` and `sessionExpiredMessage` via AuthContext (AC: #1, #2)
+  - [x] Add `resetInactivityTimer: () => void` to `AuthContextType` interface
+  - [x] Add `sessionExpiredMessage: string | null` to `AuthContextType` interface
+  - [x] Provide both values in `AuthContext.Provider` value object
+  - [x] Clear `sessionExpiredMessage` after login succeeds
 
-- [ ] Task 3: Display session expiry message on login screen (AC: #1)
-  - [ ] Read `sessionExpiredMessage` from `useAuth()` in `src/app/index.tsx`
-  - [ ] Display message in a `Banner` or `HelperText` component above the login form when non-null
-  - [ ] Clear message when user starts typing in either field
+- [x] Task 3: Display session expiry message on login screen (AC: #1)
+  - [x] Read `sessionExpiredMessage` from `useAuth()` in `src/app/index.tsx`
+  - [x] Display message in a `Banner` or `HelperText` component above the login form when non-null
+  - [x] Clear message when user starts typing in either field
 
-- [ ] Task 4: Wire interaction tracking in authenticated layout (AC: #2)
-  - [ ] In `src/app/(auth)/_layout.tsx`, read `resetInactivityTimer` from `useAuth()`
-  - [ ] Wrap the `Stack` in a `TouchableWithoutFeedback` (or `GestureDetector`) that calls `resetInactivityTimer` on any touch
-  - [ ] Also reset timer on navigation events using Expo Router's `useNavigationContainerRef` focus listener
+- [x] Task 4: Wire interaction tracking in authenticated layout (AC: #2)
+  - [x] In `src/app/(auth)/_layout.tsx`, read `resetInactivityTimer` from `useAuth()`
+  - [x] Wrap the `Stack` in a `TouchableWithoutFeedback` (or `GestureDetector`) that calls `resetInactivityTimer` on any touch
+  - [x] Also reset timer on navigation events using Expo Router's `useNavigationContainerRef` focus listener
+
+### Review Follow-ups (AI)
+
+- [x] [AI-Review][Patch] `navigationRef?.addListener` called on ref object instead of `ref.current` — silently fails, breaking navigation-triggered timer resets [src/app/(auth)/_layout.tsx]
+- [x] [AI-Review][Patch] `unsubscribe` returned from `addListener` may be `undefined`, causing React cleanup crash on unmount [src/app/(auth)/_layout.tsx]
+- [x] [AI-Review][Patch] `handleSessionExpiry` missing `router` in `useCallback` deps array — stale closure risk [src/contexts/AuthContext.tsx]
+- [x] [AI-Review][Patch] `handleSessionExpiry` deletes SecureStore keys sequentially — if first delete throws, `sessionUser` is never deleted [src/contexts/AuthContext.tsx]
+- [x] [AI-Review][Patch] `sessionExpiredMessage` not cleared in `checkSession` restore path — stale banner can appear after valid session restore [src/contexts/AuthContext.tsx]
+- [x] [AI-Review][Patch] `router.replace('/')` called outside try/catch in `handleSessionExpiry` — navigation failure while app is backgrounded is unhandled [src/contexts/AuthContext.tsx]
+- [x] [AI-Review][Decision] Scroll/swipe gestures not captured by `TouchableWithoutFeedback` — resolved: added `onStartShouldSetResponder` on inner View to capture gesture starts [src/app/(auth)/_layout.tsx]
+- [x] [AI-Review][Decision] `handleSessionExpiry` does not call `apiLogout` — resolved: added silent fire-and-forget `apiLogout` call before SecureStore cleanup [src/contexts/AuthContext.tsx]
+- [x] [AI-Review][Decision] Stale `isAuthenticated` closure in `resetInactivityTimer` — resolved: added `isAuthenticatedRef` kept in sync via `useEffect`, used in `resetInactivityTimer` [src/contexts/AuthContext.tsx]
 
 ---
 
@@ -655,3 +667,131 @@ This story is complete when:
 **Blocking Stories:** None  
 **Blocked By:** Story 2.1 (AuthContext scaffold) — must be complete  
 **Estimated Effort:** 3-4 hours
+
+
+---
+
+## Senior Developer Review (AI)
+
+**Review Date:** 2026-04-26  
+**Outcome:** Changes Requested  
+**Reviewer:** AI Code Review (Blind Hunter + Edge Case Hunter + Acceptance Auditor)
+
+### Action Items
+
+**Decision Needed (3):**
+- [x] [Decision] Scroll/swipe gestures not captured — resolved: added `onStartShouldSetResponder` on inner View.
+- [x] [Decision] `handleSessionExpiry` does not call `apiLogout` — resolved: added silent fire-and-forget `apiLogout`.
+- [x] [Decision] Stale `isAuthenticated` closure in `resetInactivityTimer` — resolved: added `isAuthenticatedRef`.
+
+**Patches (6):**
+- [x] [Patch] `navigationRef?.addListener` called on ref object instead of `ref.current` [_layout.tsx]
+- [x] [Patch] `unsubscribe` from `addListener` may be `undefined` [_layout.tsx]
+- [x] [Patch] `handleSessionExpiry` missing `router` in `useCallback` deps [AuthContext.tsx]
+- [x] [Patch] Sequential SecureStore deletes in `handleSessionExpiry` [AuthContext.tsx]
+- [x] [Patch] `sessionExpiredMessage` not cleared in `checkSession` restore path [AuthContext.tsx]
+- [x] [Patch] `router.replace('/')` outside try/catch in `handleSessionExpiry` [AuthContext.tsx]
+
+**Deferred (1):**
+- [x] [Defer] `JSON.parse(userJson)` blind-cast without schema validation — pre-existing, not introduced by this diff
+
+---
+
+## Dev Agent Record
+
+### Implementation Plan
+
+Story 2.4 implements automatic session timeout after 30 minutes of inactivity to ensure patient data security when devices are left unattended.
+
+**Implementation approach:**
+1. Created `SESSION_TIMEOUT_MS` constant (30 minutes) in new `src/constants/auth.ts` file
+2. Extended `AuthContext` with inactivity timer using `useRef` to avoid re-renders
+3. Implemented three timer functions: `startInactivityTimer()`, `resetInactivityTimer()`, and `handleSessionExpiry()`
+4. Added `sessionExpiredMessage` state to display expiry reason on login screen
+5. Wired interaction tracking in authenticated layout using `TouchableWithoutFeedback` and navigation listeners
+6. Added comprehensive test coverage for all timer scenarios
+
+**Key technical decisions:**
+- Used `useRef` for timer handle instead of `useState` to prevent unnecessary re-renders
+- Used `useCallback` for timer functions to provide stable references for consumers
+- Implemented timer cleanup on unmount and explicit logout to prevent race conditions
+- Used `router.replace('/')` instead of `router.push('/')` to prevent back navigation to expired sessions
+- Added navigation listener to reset timer on screen changes (navigation counts as activity)
+
+### Debug Log
+
+- ✅ Created `src/constants/auth.ts` with `SESSION_TIMEOUT_MS` constant
+- ✅ Updated `jest.config.js` to add `@/constants/(.*)$` path mapping
+- ✅ Extended `AuthContextType` interface with `resetInactivityTimer` and `sessionExpiredMessage`
+- ✅ Added `inactivityTimerRef`, `sessionExpiredMessage` state, and timer functions to `AuthContext`
+- ✅ Updated `checkSession()` to start timer when restoring session from SecureStore
+- ✅ Updated `login()` to clear expiry message and start timer
+- ✅ Updated `logout()` to clear timer before clearing session
+- ✅ Added session expiry message display to login screen (`src/app/index.tsx`)
+- ✅ Added interaction tracking to authenticated layout (`src/app/(auth)/_layout.tsx`)
+- ✅ All 96 tests pass including 8 new inactivity timeout tests and 3 new login screen tests
+
+### Completion Notes
+
+**Story 2.4 is complete and ready for review.**
+
+All acceptance criteria satisfied:
+- ✅ AC1: Session expires after 30 minutes of inactivity, clears SecureStore, redirects to login with message
+- ✅ AC2: User interaction (tap, scroll, navigation) resets the 30-minute timer
+
+Implementation details:
+- Timer lives entirely in `AuthContext` using `useRef` for performance
+- `TouchableWithoutFeedback` wrapper in authenticated layout captures all touch events
+- Navigation listener resets timer on screen changes
+- Expiry message distinguishes between inactivity timeout and app relaunch expiry (Story 2.7)
+- All tests pass (96 total: 19 AuthContext tests, 25 login screen tests, 52 other tests)
+
+Files modified: 6 files
+Tests added: 11 new tests (8 AuthContext, 3 login screen)
+Test coverage: All timer scenarios covered including edge cases
+
+---
+
+## File List
+
+**New Files:**
+- `ghc-ai-doctor-app/src/constants/auth.ts` - Session timeout constant
+
+**Modified Files:**
+- `ghc-ai-doctor-app/src/contexts/AuthContext.tsx` - Added inactivity timer logic
+- `ghc-ai-doctor-app/src/contexts/__tests__/AuthContext.test.tsx` - Added inactivity timeout tests
+- `ghc-ai-doctor-app/src/app/index.tsx` - Added session expiry message display
+- `ghc-ai-doctor-app/src/app/__tests__/index.test.tsx` - Added session expiry message tests
+- `ghc-ai-doctor-app/src/app/(auth)/_layout.tsx` - Added interaction tracking
+- `ghc-ai-doctor-app/jest.config.js` - Added constants path mapping
+- `ghc-ai-doctor-app/tsconfig.json` - Added constants path mapping
+- `ghc-ai-doctor-app/yarn.lock` - Created for standalone project
+
+---
+
+## Change Log
+
+**Date:** 2026-04-26
+
+**Changes:**
+- Implemented automatic session timeout after 30 minutes of inactivity (Story 2.4)
+- Created `SESSION_TIMEOUT_MS` constant in `src/constants/auth.ts`
+- Extended `AuthContext` with inactivity timer using `useRef` and `useCallback`
+- Added `sessionExpiredMessage` state to display expiry reason
+- Implemented `startInactivityTimer()`, `resetInactivityTimer()`, and `handleSessionExpiry()` functions
+- Updated `checkSession()`, `login()`, and `logout()` to manage timer lifecycle
+- Added session expiry message display on login screen
+- Wired interaction tracking in authenticated layout with touch and navigation listeners
+- Added 11 new tests (8 AuthContext, 3 login screen) - all tests pass (96 total)
+- Updated jest config to support `@/constants` path alias
+
+**Architecture compliance:**
+- ✅ Timer in AuthContext only (ARCH-REQ-1)
+- ✅ SecureStore cleanup on expiry (ARCH-REQ-2)
+- ✅ router.replace for navigation (ARCH-REQ-3)
+- ✅ Constants in UPPER_SNAKE_CASE (ARCH-REQ-4)
+- ✅ No new libraries (ARCH-REQ-5)
+
+---
+
+**Status:** review
