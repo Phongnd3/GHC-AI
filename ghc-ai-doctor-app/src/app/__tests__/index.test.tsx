@@ -2,14 +2,26 @@ import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import LoginScreen from '../index';
 import { useAuth } from '@/contexts/AuthContext';
+import { mapErrorToUserMessage, ErrorType } from '@/utils/errorHandler';
 import { router } from 'expo-router';
 
 jest.mock('@/contexts/AuthContext', () => ({
   useAuth: jest.fn(),
 }));
 
+jest.mock('@/utils/errorHandler', () => ({
+  mapErrorToUserMessage: jest.fn(),
+  ErrorType: {
+    NETWORK_ERROR: 'NETWORK_ERROR',
+    AUTH_ERROR: 'AUTH_ERROR',
+    SERVER_ERROR: 'SERVER_ERROR',
+    TIMEOUT_ERROR: 'TIMEOUT_ERROR',
+    UNKNOWN_ERROR: 'UNKNOWN_ERROR',
+  },
+}));
+
 // Mock react-native-paper to avoid native animation issues in test environment.
-// React version mismatch (react@19.2.5 vs react-native-renderer@19.1.0) causes
+// React version mismatch (react@19.1.0 vs react-native-renderer) causes
 // TextInput's Animated API to fail when connecting to the native renderer.
 // require() is used inside the factory because jest.mock hoisting prevents
 // top-level imports from being accessible inside the factory function.
@@ -74,12 +86,29 @@ jest.mock('react-native-paper', () => {
     Text: ({ children, ...rest }: { children: React.ReactNode; [key: string]: unknown }) => (
       <RN.Text {...rest}>{children}</RN.Text>
     ),
+    HelperText: ({
+      children,
+      visible,
+      testID,
+      ...rest
+    }: {
+      children: React.ReactNode;
+      visible?: boolean;
+      testID?: string;
+      [key: string]: unknown;
+    }) =>
+      visible ? (
+        <RN.Text testID={testID ?? 'helper-text'} {...rest}>
+          {children}
+        </RN.Text>
+      ) : null,
     useTheme: () => ({
       colors: {
         background: '#ffffff',
         onBackground: '#000000',
         onSurfaceVariant: '#666666',
         primary: '#00897b',
+        error: '#b00020',
       },
     }),
   };
@@ -93,10 +122,15 @@ describe('LoginScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (useAuth as jest.Mock).mockReturnValue({
-      login: mockLogin,
+    (useAuth as jest.Mock).mockReturnValue({ login: mockLogin });
+    // Default: no error mapping needed for happy-path tests
+    (mapErrorToUserMessage as jest.Mock).mockReturnValue({
+      type: ErrorType.UNKNOWN_ERROR,
+      message: 'An unexpected error occurred. Please try again.',
     });
   });
+
+  // ── Existing happy-path tests ──────────────────────────────────────────────
 
   it('should render the app title', () => {
     const { getByText } = render(<LoginScreen />);
@@ -125,6 +159,14 @@ describe('LoginScreen', () => {
     expect(mockLogin).not.toHaveBeenCalled();
   });
 
+  it('should not call login when fields contain only whitespace', () => {
+    const { getByTestId, getByText } = render(<LoginScreen />);
+    fireEvent.changeText(getByTestId('username-input'), '   ');
+    fireEvent.changeText(getByTestId('password-input'), '   ');
+    fireEvent.press(getByText('Login'));
+    expect(mockLogin).not.toHaveBeenCalled();
+  });
+
   it('should call login with credentials and navigate on success', async () => {
     mockLogin.mockResolvedValue(undefined);
 
@@ -140,19 +182,155 @@ describe('LoginScreen', () => {
     });
   });
 
-  it('should not navigate if login throws', async () => {
-    mockLogin.mockRejectedValue(new Error('Invalid credentials'));
+  // ── Task 1: Wire 401 error handling ───────────────────────────────────────
+
+  it('should show invalid credentials error message on AUTH_ERROR', async () => {
+    mockLogin.mockRejectedValue(new Error('401'));
+    (mapErrorToUserMessage as jest.Mock).mockReturnValue({
+      type: ErrorType.AUTH_ERROR,
+      message: 'Session expired. Please log in again.',
+    });
 
     const { getByTestId, getByText } = render(<LoginScreen />);
 
-    fireEvent.changeText(getByTestId('username-input'), 'testuser');
-    fireEvent.changeText(getByTestId('password-input'), 'wrong');
+    fireEvent.changeText(getByTestId('username-input'), 'wronguser');
+    fireEvent.changeText(getByTestId('password-input'), 'wrongpass');
     fireEvent.press(getByText('Login'));
 
     await waitFor(() => {
-      expect(mockLogin).toHaveBeenCalled();
+      expect(getByText('Invalid username or password. Please try again.')).toBeTruthy();
+      // Verify the HelperText element is rendered via its testID
+      expect(getByTestId('error-message')).toBeTruthy();
+    });
+  });
+
+  it('should call mapErrorToUserMessage when login fails', async () => {
+    const error = new Error('401');
+    mockLogin.mockRejectedValue(error);
+    (mapErrorToUserMessage as jest.Mock).mockReturnValue({
+      type: ErrorType.AUTH_ERROR,
+      message: 'Session expired. Please log in again.',
     });
 
-    expect(router.replace).not.toHaveBeenCalled();
+    const { getByTestId, getByText } = render(<LoginScreen />);
+
+    fireEvent.changeText(getByTestId('username-input'), 'wronguser');
+    fireEvent.changeText(getByTestId('password-input'), 'wrongpass');
+    fireEvent.press(getByText('Login'));
+
+    await waitFor(() => {
+      expect(mapErrorToUserMessage).toHaveBeenCalledWith(error);
+    });
+  });
+
+  it('should pass non-auth errors through unchanged', async () => {
+    mockLogin.mockRejectedValue(new Error('network'));
+    (mapErrorToUserMessage as jest.Mock).mockReturnValue({
+      type: ErrorType.NETWORK_ERROR,
+      message: 'No internet connection. Please check your network and try again.',
+    });
+
+    const { getByTestId, getByText } = render(<LoginScreen />);
+
+    fireEvent.changeText(getByTestId('username-input'), 'user');
+    fireEvent.changeText(getByTestId('password-input'), 'pass');
+    fireEvent.press(getByText('Login'));
+
+    await waitFor(() => {
+      expect(
+        getByText('No internet connection. Please check your network and try again.')
+      ).toBeTruthy();
+    });
+  });
+
+  it('should not navigate to dashboard on failed login', async () => {
+    mockLogin.mockRejectedValue(new Error('401'));
+    (mapErrorToUserMessage as jest.Mock).mockReturnValue({
+      type: ErrorType.AUTH_ERROR,
+      message: 'Session expired. Please log in again.',
+    });
+
+    const { getByTestId, getByText } = render(<LoginScreen />);
+
+    fireEvent.changeText(getByTestId('username-input'), 'wronguser');
+    fireEvent.changeText(getByTestId('password-input'), 'wrongpass');
+    fireEvent.press(getByText('Login'));
+
+    await waitFor(() => {
+      expect(router.replace).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── Task 2: Fields remain editable after failed login ─────────────────────
+
+  it('should re-enable fields after failed login', async () => {
+    mockLogin.mockRejectedValue(new Error('401'));
+    (mapErrorToUserMessage as jest.Mock).mockReturnValue({
+      type: ErrorType.AUTH_ERROR,
+      message: 'Session expired. Please log in again.',
+    });
+
+    const { getByTestId, getByText } = render(<LoginScreen />);
+
+    fireEvent.changeText(getByTestId('username-input'), 'wronguser');
+    fireEvent.changeText(getByTestId('password-input'), 'wrongpass');
+    fireEvent.press(getByText('Login'));
+
+    await waitFor(() => {
+      // editable prop should be true (not disabled)
+      expect(getByTestId('username-input').props.editable).toBe(true);
+      expect(getByTestId('password-input').props.editable).toBe(true);
+    });
+  });
+
+  // ── Task 3: Clear error on user interaction ────────────────────────────────
+
+  it('should clear error message when user types in username field', async () => {
+    mockLogin.mockRejectedValue(new Error('401'));
+    (mapErrorToUserMessage as jest.Mock).mockReturnValue({
+      type: ErrorType.AUTH_ERROR,
+      message: 'Session expired. Please log in again.',
+    });
+
+    const { getByTestId, getByText, queryByText } = render(<LoginScreen />);
+
+    fireEvent.changeText(getByTestId('username-input'), 'wronguser');
+    fireEvent.changeText(getByTestId('password-input'), 'wrongpass');
+    fireEvent.press(getByText('Login'));
+
+    await waitFor(() => {
+      expect(getByText('Invalid username or password. Please try again.')).toBeTruthy();
+    });
+
+    fireEvent.changeText(getByTestId('username-input'), 'newuser');
+
+    expect(queryByText('Invalid username or password. Please try again.')).toBeNull();
+  });
+
+  it('should clear error message when user types in password field', async () => {
+    mockLogin.mockRejectedValue(new Error('401'));
+    (mapErrorToUserMessage as jest.Mock).mockReturnValue({
+      type: ErrorType.AUTH_ERROR,
+      message: 'Session expired. Please log in again.',
+    });
+
+    const { getByTestId, getByText, queryByText } = render(<LoginScreen />);
+
+    fireEvent.changeText(getByTestId('username-input'), 'wronguser');
+    fireEvent.changeText(getByTestId('password-input'), 'wrongpass');
+    fireEvent.press(getByText('Login'));
+
+    await waitFor(() => {
+      expect(getByText('Invalid username or password. Please try again.')).toBeTruthy();
+    });
+
+    fireEvent.changeText(getByTestId('password-input'), 'newpass');
+
+    expect(queryByText('Invalid username or password. Please try again.')).toBeNull();
+  });
+
+  it('should not show error message initially', () => {
+    const { queryByText } = render(<LoginScreen />);
+    expect(queryByText('Invalid username or password. Please try again.')).toBeNull();
   });
 });

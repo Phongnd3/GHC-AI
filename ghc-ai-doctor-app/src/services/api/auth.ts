@@ -30,20 +30,36 @@ export async function login(username: string, password: string): Promise<Session
   // Buffer is not available in Hermes (iOS/Android JS engine).
   const credentials = btoa(unescape(encodeURIComponent(`${username}:${password}`)));
 
-  const response = await apiClient.post(
-    '/session',
-    {},
-    {
-      timeout: LOGIN_TIMEOUT,
-      headers: {
-        Authorization: `Basic ${credentials}`,
-      },
-    }
-  );
+  // Invalidate any existing unauthenticated session before attempting login.
+  // OpenMRS issues a JSESSIONID even for failed auth (200 + authenticated: false).
+  // The native HTTP layer caches that cookie and sends it on the next request,
+  // causing OpenMRS to reuse the old session and skip the Set-Cookie header on
+  // a subsequent successful login — making sessionId extraction fail.
+  // Deleting the session first forces OpenMRS to issue a fresh JSESSIONID.
+  try {
+    await apiClient.delete('/session', { _isLoginRequest: true } as Parameters<
+      typeof apiClient.delete
+    >[1] & { _isLoginRequest: boolean });
+  } catch {
+    // Ignore errors — the session may not exist; we just want a clean slate.
+  }
 
-  // OpenMRS returns 200 with authenticated: false for bad credentials — not a 4xx
+  const response = await apiClient.post('/session', {}, {
+    timeout: LOGIN_TIMEOUT,
+    headers: {
+      Authorization: `Basic ${credentials}`,
+    },
+    // Flag this request so the 401 interceptor knows not to redirect —
+    // on the login screen a 401 means wrong credentials, not session expiry.
+    _isLoginRequest: true,
+  } as Parameters<typeof apiClient.post>[2] & { _isLoginRequest: boolean });
+
+  // OpenMRS returns 200 with authenticated: false for bad credentials — not a 4xx.
+  // Throw with a typed code so mapErrorToUserMessage can classify this as AUTH_ERROR.
   if (!response.data.authenticated) {
-    throw new Error('Invalid credentials');
+    const err = new Error('Invalid credentials') as Error & { code: string };
+    err.code = 'AUTH_CREDENTIALS_INVALID';
+    throw err;
   }
 
   // Extract JSESSIONID from Set-Cookie response header

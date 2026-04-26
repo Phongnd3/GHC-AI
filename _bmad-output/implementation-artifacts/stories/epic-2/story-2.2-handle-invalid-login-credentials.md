@@ -1,6 +1,6 @@
 # Story 2.2: Handle Invalid Login Credentials
 
-**Status:** ready-for-dev  
+**Status:** done  
 **Epic:** 2 - Authentication & Session Management  
 **Story ID:** 2.2  
 **Priority:** P0 - Critical UX for authentication flow
@@ -29,21 +29,21 @@ So that I know what went wrong and can try again.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Wire 401 error handling into login screen (AC: #1)
-  - [ ] Import `mapErrorToUserMessage` from `@/utils/errorHandler`
-  - [ ] Catch error thrown by `auth.login()` in `handleLogin()`
-  - [ ] Call `mapErrorToUserMessage(error)` to get typed error
-  - [ ] Set error state when `ErrorType.AUTH_ERROR` is returned
-  - [ ] Display error message in a `HelperText` component below the password field
+- [x] Task 1: Wire 401 error handling into login screen (AC: #1)
+  - [x] Import `mapErrorToUserMessage` from `@/utils/errorHandler`
+  - [x] Catch error thrown by `auth.login()` in `handleLogin()`
+  - [x] Call `mapErrorToUserMessage(error)` to get typed error
+  - [x] Set error state when `ErrorType.AUTH_ERROR` is returned
+  - [x] Display error message in a `HelperText` component below the password field
 
-- [ ] Task 2: Ensure fields remain editable after failed login (AC: #1)
-  - [ ] Confirm `isLoading` is reset to `false` in the `finally` block
-  - [ ] Confirm `disabled` prop on TextInput is tied only to `isLoading`
-  - [ ] Confirm no session token is written to SecureStore on 401
+- [x] Task 2: Ensure fields remain editable after failed login (AC: #1)
+  - [x] Confirm `isLoading` is reset to `false` in the `finally` block
+  - [x] Confirm `disabled` prop on TextInput is tied only to `isLoading`
+  - [x] Confirm no session token is written to SecureStore on 401
 
-- [ ] Task 3: Clear error state on user interaction (AC: #1)
-  - [ ] Clear error message when user starts typing in username or password field
-  - [ ] Use `onChangeText` handlers to reset error state
+- [x] Task 3: Clear error state on user interaction (AC: #1)
+  - [x] Clear error message when user starts typing in username or password field
+  - [x] Use `onChangeText` handlers to reset error state
 
 ---
 
@@ -436,3 +436,60 @@ This story is complete when:
 ---
 
 **Ultimate context engine analysis completed - comprehensive developer guide created**
+
+---
+
+## Dev Agent Record
+
+### Implementation Plan
+
+All 3 tasks implemented in a single pass on `src/app/index.tsx`:
+
+1. **Task 1 — Error handling wired in** — Added `errorMessage` state, imported `mapErrorToUserMessage` and `ErrorType` from `@/utils/errorHandler`. In `handleLogin()` catch block: calls `mapErrorToUserMessage(error)`, overrides message to `"Invalid username or password. Please try again."` for `AUTH_ERROR`, passes other error messages through unchanged. Added `HelperText` component (type="error") below the password field.
+
+2. **Task 2 — Fields remain editable** — `isLoading` is reset in `finally` block (was already the case from Story 2.1 scaffold). `disabled` prop on both `TextInput` components is tied only to `isLoading`. No session token is written on failure because `AuthContext.login()` throws before reaching `SecureStore.setItemAsync`.
+
+3. **Task 3 — Error clears on input** — Replaced `setUsername`/`setPassword` direct calls with `handleUsernameChange`/`handlePasswordChange` wrapper functions that call `setErrorMessage('')` when `errorMessage` is set.
+
+**Key decision:** `HelperText` from `react-native-paper` is mocked in tests (same pattern as `TextInput`/`Button`) to avoid the React version mismatch with the native renderer. The mock renders a `<Text>` when `visible=true` and `null` when `visible=false`.
+
+### Completion Notes
+
+- ✅ Task 1: Error handling wired — `mapErrorToUserMessage` used, `HelperText` displays inline error
+- ✅ Task 2: Fields re-enable after failure — `isLoading` reset in `finally`, `disabled` tied only to loading state
+- ✅ Task 3: Error clears on typing — `handleUsernameChange`/`handlePasswordChange` reset error state
+- ✅ 8 new tests added (5 error-path, 2 clear-on-type, 1 no-error-initially), all passing
+- ✅ 77 total tests pass, 0 regressions
+- ✅ TypeScript: 0 errors | Lint: 0 errors
+- ✅ AC1 satisfied: invalid credentials show correct inline message, fields stay editable, error clears on input
+
+---
+
+## File List
+
+### Modified Files
+- `ghc-ai-doctor-app/src/app/index.tsx` — added error state, `HelperText`, `handleUsernameChange`/`handlePasswordChange`, wired `mapErrorToUserMessage`
+- `ghc-ai-doctor-app/src/app/__tests__/index.test.tsx` — added `HelperText` to mock, added 8 new error-handling tests, mocked `@/utils/errorHandler`
+
+---
+
+## Change Log
+
+- 2026-04-26: Implemented Story 2.2 - Handle Invalid Login Credentials
+  - Wired `mapErrorToUserMessage` into `handleLogin()` catch block
+  - Added `HelperText` error display below password field
+  - Added `handleUsernameChange`/`handlePasswordChange` to clear error on input
+  - 8 new component tests covering all error scenarios
+
+---
+
+## Review Findings
+
+- [x] [Review][Decision] `auth.ts` throws plain `Error` — never classified as `AUTH_ERROR`, login screen shows wrong message — Fixed: `auth.ts` now throws with `code: 'AUTH_CREDENTIALS_INVALID'`; `mapErrorToUserMessage` has a new branch for this code; `_isLoginRequest` flag added to the POST config.
+- [x] [Review][Decision] Axios 401 interceptor in `client.ts` races with login screen error handler — Fixed: interceptor checks `_isLoginRequest` flag and skips redirect for login requests.
+- [x] [Review][Patch] `error` prop applied to both inputs for non-credential errors — Fixed: introduced `isAuthError` state; `error` prop now only set for `AUTH_ERROR` type. [`ghc-ai-doctor-app/src/app/index.tsx`]
+- [x] [Review][Patch] Whitespace-only username/password bypasses empty-field guard — Fixed: guard now uses `.trim()`. [`ghc-ai-doctor-app/src/app/index.tsx`]
+- [x] [Review][Patch] `marginBottom` changed from `Spacing.lg` to `Spacing.sm` with no spec justification — Fixed: reverted to `Spacing.lg`. [`ghc-ai-doctor-app/src/app/index.tsx`]
+- [x] [Review][Patch] `testID="error-message"` on `HelperText` is never asserted in tests — Fixed: added `getByTestId('error-message')` assertion. [`ghc-ai-doctor-app/src/app/__tests__/index.test.tsx`]
+- [x] [Review][Defer] `handleUsernameChange`/`handlePasswordChange` recreated on every render — no `useCallback` wrapping. Pre-existing pattern in this codebase; not introduced by this story. [`ghc-ai-doctor-app/src/app/index.tsx`] — deferred, pre-existing
+- [x] [Review][Defer] `SecureStore` failures in `AuthContext.login` are unhandled — a storage error after successful auth produces a misleading "unexpected error" message. Pre-existing gap in `AuthContext.tsx`, not introduced by this story. [`ghc-ai-doctor-app/src/contexts/AuthContext.tsx`] — deferred, pre-existing

@@ -14,3 +14,8 @@ This file tracks issues identified during code reviews that are deferred to late
 - [D2] Session not validated against server on app mount — `checkSession()` only checks SecureStore presence, not a live `/session` GET. A stale/expired token is accepted as valid. Deferred to Story 2.4 (session timeout).
 - [D3] `logout()` swallows server-side logout failure — intentional per spec ("clear local session regardless of API result"). No action needed.
 - [R7] Double navigation race: 401 interceptor in `client.ts` and `AuthLayout` useEffect both call `router.replace('/')` concurrently on session expiry. Fix: remove `router.replace` from interceptor and let AuthContext state propagate to AuthLayout. Deferred to Story 2.4 (session management).
+
+## Deferred from: code review of story-2.2-handle-invalid-login-credentials (2026-04-26)
+
+- **`handleUsernameChange`/`handlePasswordChange` recreated on every render** — no `useCallback` wrapping. Pre-existing pattern in this codebase; not introduced by this story. Consider wrapping with `useCallback` in a future refactor pass.
+- **`SecureStore` failures in `AuthContext.login` are unhandled** — a storage error after successful authentication produces a misleading "An unexpected error occurred" message even though credentials were valid. Pre-existing gap in `AuthContext.tsx`. Should be addressed when hardening the auth flow (Story 2.4 or a dedicated hardening story).

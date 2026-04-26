@@ -49,6 +49,15 @@ export function mapErrorToUserMessage(error: any): MappedError {
     }
   }
 
+  // OpenMRS returns 200 + authenticated:false for bad credentials — auth.ts
+  // throws a plain Error with code AUTH_CREDENTIALS_INVALID in that case.
+  if (error.code === 'AUTH_CREDENTIALS_INVALID') {
+    return {
+      message: 'Session expired. Please log in again.',
+      type: ErrorType.AUTH_ERROR,
+    };
+  }
+
   // Fallback for unknown errors
   return {
     message: 'An unexpected error occurred. Please try again.',

@@ -47,12 +47,13 @@ describe('auth service', () => {
       expect(apiClient.post).toHaveBeenCalledWith(
         '/session',
         {},
-        {
+        expect.objectContaining({
           timeout: expect.any(Number),
           headers: {
             Authorization: expect.stringMatching(/^Basic /),
           },
-        }
+          _isLoginRequest: true,
+        })
       );
     });
 
@@ -106,6 +107,20 @@ describe('auth service', () => {
       (apiClient.post as jest.Mock).mockResolvedValue(makeLoginResponse({ authenticated: false }));
 
       await expect(login('testuser', 'wrongpassword')).rejects.toThrow('Invalid credentials');
+    });
+
+    it('should throw with AUTH_CREDENTIALS_INVALID code when authenticated is false', async () => {
+      (apiClient.post as jest.Mock).mockResolvedValue(makeLoginResponse({ authenticated: false }));
+
+      let thrownError: (Error & { code?: string }) | null = null;
+      try {
+        await login('testuser', 'wrongpassword');
+      } catch (e) {
+        thrownError = e as Error & { code?: string };
+      }
+
+      expect(thrownError).not.toBeNull();
+      expect(thrownError?.code).toBe('AUTH_CREDENTIALS_INVALID');
     });
 
     it('should throw when no JSESSIONID cookie is returned', async () => {

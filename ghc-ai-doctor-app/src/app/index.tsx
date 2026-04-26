@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, Button, Text, useTheme } from 'react-native-paper';
+import { TextInput, Button, Text, HelperText, useTheme } from 'react-native-paper';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import { mapErrorToUserMessage, ErrorType } from '@/utils/errorHandler';
 import { Spacing } from '@/theme/spacing';
 import { Typography } from '@/theme/typography';
 
@@ -13,18 +14,48 @@ export default function LoginScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isAuthError, setIsAuthError] = useState(false);
+
+  // Task 3: Clear error when user starts typing
+  function handleUsernameChange(value: string) {
+    setUsername(value);
+    if (errorMessage) {
+      setErrorMessage('');
+      setIsAuthError(false);
+    }
+  }
+
+  function handlePasswordChange(value: string) {
+    setPassword(value);
+    if (errorMessage) {
+      setErrorMessage('');
+      setIsAuthError(false);
+    }
+  }
 
   async function handleLogin() {
-    if (!username || !password) return;
+    if (!username.trim() || !password.trim()) return;
 
     setIsLoading(true);
+    setErrorMessage('');
+    setIsAuthError(false);
+
     try {
       await login(username, password);
       router.replace('/dashboard');
     } catch (error) {
-      // Error handling covered in Story 2.2
-      console.error('Login failed:', error);
+      // Task 1: Use centralized error handler; override message for login context
+      const mapped = mapErrorToUserMessage(error);
+      if (mapped.type === ErrorType.AUTH_ERROR) {
+        setErrorMessage('Invalid username or password. Please try again.');
+        setIsAuthError(true);
+      } else {
+        setErrorMessage(mapped.message);
+        setIsAuthError(false);
+      }
     } finally {
+      // Task 2: Always reset loading so fields re-enable
       setIsLoading(false);
     }
   }
@@ -49,27 +80,33 @@ export default function LoginScreen() {
         <TextInput
           label="Username"
           value={username}
-          onChangeText={setUsername}
+          onChangeText={handleUsernameChange}
           autoCapitalize="none"
           autoCorrect={false}
           style={styles.input}
           mode="outlined"
           disabled={isLoading}
+          error={isAuthError}
           testID="username-input"
         />
 
         <TextInput
           label="Password"
           value={password}
-          onChangeText={setPassword}
+          onChangeText={handlePasswordChange}
           secureTextEntry
           autoCapitalize="none"
           autoCorrect={false}
           style={styles.input}
           mode="outlined"
           disabled={isLoading}
+          error={isAuthError}
           testID="password-input"
         />
+
+        <HelperText type="error" visible={!!errorMessage} testID="error-message">
+          {errorMessage}
+        </HelperText>
 
         <Button
           mode="contained"
