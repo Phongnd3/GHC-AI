@@ -37,3 +37,10 @@ This file tracks issues identified during code reviews that are deferred to late
 ## Deferred from: code review of story-2.6-doctor-logout-with-confirmation (2026-04-26)
 
 - **State update on unmounted component after `router.replace('/')`** — `handleConfirmLogout`'s `finally` block calls `setIsLoggingOut(false)` and `setShowLogoutDialog(false)` after `router.replace('/')` has already navigated away. React 19 handles this gracefully (no crash, warning suppressed), but it is technically a state update on an unmounted component. Fixing requires an `isMounted` ref pattern for minimal practical gain. Deferred to a future hardening pass.
+
+## Deferred from: code review of story-2.7-session-persistence-across-app-restarts (2026-04-26)
+
+- **`parseInt(timestampStr, 10)` NaN not guarded explicitly** — if `timestampStr` is non-numeric, `NaN < SESSION_TIMEOUT_MS` evaluates to `false`, so the code falls into the safe expired branch. Behavior is correct but implicit. Adding an explicit `isNaN(elapsed)` guard with a log would make intent clear. Low priority cosmetic fix.
+- **Clock skew can prematurely expire a valid session** — `sessionTimestamp` is a wall-clock value from `Date.now()`. If the device clock jumps forward (NTP sync, manual change) between login and relaunch, `elapsed` is artificially large and a valid session is expired. Inherent limitation of wall-clock timestamps; no standard fix without server-side token validation.
+- **`checkSession()` no-session path does not call `setSessionExpiredMessage(null)`** — when all SecureStore keys are null, `sessionExpiredMessage` is not explicitly cleared. Unreachable in practice since `logout()` and `handleSessionExpiry()` both clear state before keys are removed. Low risk; consider adding for defensive completeness in a future hardening pass.
+- **No test asserts navigation to dashboard after valid session restore** — `checkSession()` sets `isAuthenticated = true` and the layout's redirect logic handles navigation, but no test covers this end-to-end path. Requires integration test infrastructure (e.g., Detox or a full router mock) not yet in place.

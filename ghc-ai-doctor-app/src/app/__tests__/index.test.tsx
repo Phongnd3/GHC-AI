@@ -128,7 +128,12 @@ describe('LoginScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (useAuth as jest.Mock).mockReturnValue({ login: mockLogin });
+    (useAuth as jest.Mock).mockReturnValue({
+      login: mockLogin,
+      sessionExpiredMessage: null,
+      isAuthenticated: false,
+      isLoading: false,
+    });
     // Default: no error mapping needed for happy-path tests
     (mapErrorToUserMessage as jest.Mock).mockReturnValue({
       type: ErrorType.UNKNOWN_ERROR,
@@ -494,6 +499,8 @@ describe('LoginScreen', () => {
     (useAuth as jest.Mock).mockReturnValue({
       login: mockLogin,
       sessionExpiredMessage: 'Session expired due to inactivity. Please log in again.',
+      isAuthenticated: false,
+      isLoading: false,
     });
 
     const { getByText, getByTestId } = render(<LoginScreen />);
@@ -506,6 +513,8 @@ describe('LoginScreen', () => {
     (useAuth as jest.Mock).mockReturnValue({
       login: mockLogin,
       sessionExpiredMessage: null,
+      isAuthenticated: false,
+      isLoading: false,
     });
 
     const { queryByText, queryByTestId } = render(<LoginScreen />);
@@ -518,6 +527,8 @@ describe('LoginScreen', () => {
     (useAuth as jest.Mock).mockReturnValue({
       login: mockLogin,
       sessionExpiredMessage: 'Session expired due to inactivity. Please log in again.',
+      isAuthenticated: false,
+      isLoading: false,
     });
 
     const { getByText } = render(<LoginScreen />);
@@ -535,11 +546,55 @@ describe('LoginScreen', () => {
     (useAuth as jest.Mock).mockReturnValue({
       login: mockLogin,
       sessionExpiredMessage: null,
+      isAuthenticated: false,
+      isLoading: false,
     });
 
     render(<LoginScreen />);
 
     expect(preventScreenCaptureAsync).not.toHaveBeenCalled();
     expect(allowScreenCaptureAsync).not.toHaveBeenCalled();
+  });
+
+  // Story 2.7: Session persistence — redirect to dashboard on valid session restore
+  it('redirects to dashboard when session is already valid on app launch', async () => {
+    (useAuth as jest.Mock).mockReturnValue({
+      login: mockLogin,
+      sessionExpiredMessage: null,
+      isAuthenticated: true,
+      isLoading: false,
+    });
+
+    render(<LoginScreen />);
+
+    await waitFor(() => {
+      expect(router.replace).toHaveBeenCalledWith('/dashboard');
+    });
+  });
+
+  it('does not redirect while session check is still loading', () => {
+    (useAuth as jest.Mock).mockReturnValue({
+      login: mockLogin,
+      sessionExpiredMessage: null,
+      isAuthenticated: false,
+      isLoading: true,
+    });
+
+    render(<LoginScreen />);
+
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('does not redirect when session check completes with no valid session', () => {
+    (useAuth as jest.Mock).mockReturnValue({
+      login: mockLogin,
+      sessionExpiredMessage: null,
+      isAuthenticated: false,
+      isLoading: false,
+    });
+
+    render(<LoginScreen />);
+
+    expect(router.replace).not.toHaveBeenCalled();
   });
 });

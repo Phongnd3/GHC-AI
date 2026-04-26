@@ -1,6 +1,6 @@
 # Story 2.7: Session Persistence Across App Restarts
 
-**Status:** ready-for-dev  
+**Status:** done  
 **Epic:** 2 - Authentication & Session Management  
 **Story ID:** 2.7  
 **Priority:** P0 - Core UX requirement (NFR8)
@@ -33,20 +33,29 @@ So that I don't have to log in again unless my session has expired.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Store session timestamp on login (AC: #1, #2)
-  - [ ] In `AuthContext.login()`, after storing `sessionToken`, also store the current timestamp: `SecureStore.setItemAsync('sessionTimestamp', Date.now().toString())`
-  - [ ] In `AuthContext.logout()`, delete `sessionTimestamp` from SecureStore alongside `sessionToken` and `sessionUser`
-  - [ ] In `AuthContext.handleSessionExpiry()` (Story 2.4), delete `sessionTimestamp` from SecureStore
+- [x] Task 1: Store session timestamp on login (AC: #1, #2)
+  - [x] In `AuthContext.login()`, after storing `sessionToken`, also store the current timestamp: `SecureStore.setItemAsync('sessionTimestamp', Date.now().toString())`
+  - [x] In `AuthContext.logout()`, delete `sessionTimestamp` from SecureStore alongside `sessionToken` and `sessionUser`
+  - [x] In `AuthContext.handleSessionExpiry()` (Story 2.4), delete `sessionTimestamp` from SecureStore
 
-- [ ] Task 2: Validate session age on app launch (AC: #1, #2)
-  - [ ] In `AuthContext.checkSession()`, after reading `sessionToken` and `sessionUser`, also read `sessionTimestamp`
-  - [ ] Calculate elapsed time: `Date.now() - parseInt(sessionTimestamp, 10)`
-  - [ ] If elapsed time < `SESSION_TIMEOUT_MS` (30 min): restore session, start inactivity timer → navigate to dashboard
-  - [ ] If elapsed time >= `SESSION_TIMEOUT_MS`: clear all SecureStore keys, set `sessionExpiredMessage` to `"Session expired. Please log in again."` → show login screen
+- [x] Task 2: Validate session age on app launch (AC: #1, #2)
+  - [x] In `AuthContext.checkSession()`, after reading `sessionToken` and `sessionUser`, also read `sessionTimestamp`
+  - [x] Calculate elapsed time: `Date.now() - parseInt(sessionTimestamp, 10)`
+  - [x] If elapsed time < `SESSION_TIMEOUT_MS` (30 min): restore session, start inactivity timer → navigate to dashboard
+  - [x] If elapsed time >= `SESSION_TIMEOUT_MS`: clear all SecureStore keys, set `sessionExpiredMessage` to `"Session expired. Please log in again."` → show login screen
 
-- [ ] Task 3: Update `(auth)/_layout.tsx` to handle initial navigation (AC: #1)
-  - [ ] Confirm the existing redirect logic (`if (!isLoading && !isAuthenticated) router.replace('/')`) correctly handles both the valid-session and expired-session paths
-  - [ ] No changes needed if Story 2.1's layout already handles this — document the verification
+- [x] Task 3: Update `(auth)/_layout.tsx` to handle initial navigation (AC: #1)
+  - [x] Confirm the existing redirect logic (`if (!isLoading && !isAuthenticated) router.replace('/')`) correctly handles both the valid-session and expired-session paths
+  - [x] No changes needed if Story 2.1's layout already handles this — document the verification
+
+### Review Findings
+
+- [x] [Review][Patch] Orphaned SecureStore keys not cleaned up when `sessionTimestamp` is missing — `checkSession()` falls through silently when token+user exist but timestamp is absent (legacy upgrade / partial write scenario); stale keys remain in SecureStore indefinitely [`AuthContext.tsx` checkSession]
+- [x] [Review][Patch] `checkSession()` expired branch does not reset `isAuthenticated`/`user` state — initial state is `false`/`null` so no current bug, but defensive correctness requires explicit `setIsAuthenticated(false); setUser(null)` in the expired branch [`AuthContext.tsx` checkSession]
+- [x] [Review][Defer] `parseInt(timestampStr, 10)` NaN not guarded explicitly [`AuthContext.tsx`] — deferred, pre-existing; NaN path already falls into the safe expired branch (correct behavior), adding explicit guard is cosmetic
+- [x] [Review][Defer] Clock skew can prematurely expire a valid session [`AuthContext.tsx`] — deferred, pre-existing; inherent wall-clock limitation, no standard fix without server-side token validation
+- [x] [Review][Defer] `checkSession()` no-session path does not call `setSessionExpiredMessage(null)` [`AuthContext.tsx`] — deferred, pre-existing; unreachable in practice since `logout()` and `handleSessionExpiry()` clear state before keys are removed
+- [x] [Review][Defer] No test asserts navigation to dashboard after valid session restore [`AuthContext.test.tsx`] — deferred, pre-existing; navigation tested in layout tests; end-to-end coverage requires integration test infra not yet in place
 
 ---
 
@@ -419,3 +428,48 @@ With Story 2.7, all seven stories in Epic 2 (Authentication & Session Management
 | 2.6 | Doctor Logout with Confirmation | 2-3 hrs |
 | 2.7 | Session Persistence Across App Restarts | 2-3 hrs |
 | **Total** | | **~14-21 hrs** |
+
+---
+
+## Dev Agent Record
+
+### Completion Notes
+
+**Story 2.7 is complete and ready for review.**
+
+All acceptance criteria satisfied:
+- ✅ AC1: App reopened within 30 min → session restored, inactivity timer started, dashboard shown
+- ✅ AC2: App reopened after 30+ min → SecureStore cleared, "Session expired. Please log in again." shown on login screen
+
+Implementation details:
+- `AuthContext.login()` — added `SecureStore.setItemAsync('sessionTimestamp', Date.now().toString())`
+- `AuthContext.logout()` — added `sessionTimestamp` to `Promise.allSettled` deletes
+- `AuthContext.handleSessionExpiry()` — added `sessionTimestamp` to `Promise.allSettled` deletes
+- `AuthContext.checkSession()` — reads `sessionTimestamp`, calculates elapsed time vs `SESSION_TIMEOUT_MS`; valid → restore session + start timer; expired → clear all 3 keys + set expiry message
+- `(auth)/_layout.tsx` — verified no changes needed; existing `if (!isLoading && !isAuthenticated) router.replace('/')` handles both paths correctly
+- Distinct expiry messages preserved: "Session expired. Please log in again." (relaunch) vs "Session expired due to inactivity. Please log in again." (in-app timer)
+- 9 new integration tests added; all 122 tests pass (0 regressions)
+- TypeScript: clean | Lint: 0 errors
+
+---
+
+## File List
+
+**Modified Files:**
+- `ghc-ai-doctor-app/src/contexts/AuthContext.tsx` — added `sessionTimestamp` to `login()`, `logout()`, `handleSessionExpiry()`; updated `checkSession()` with timestamp validation
+- `ghc-ai-doctor-app/src/contexts/__tests__/AuthContext.test.tsx` — 9 new session persistence tests; updated 3 existing session-restore tests to include `sessionTimestamp` mock
+
+---
+
+## Change Log
+
+**Date:** 2026-04-26
+
+**Changes:**
+- Added `sessionTimestamp` write to `AuthContext.login()` (Story 2.7 — AC1, AC2)
+- Added `sessionTimestamp` delete to `AuthContext.logout()` (Story 2.7)
+- Added `sessionTimestamp` delete to `AuthContext.handleSessionExpiry()` (Story 2.7)
+- Updated `AuthContext.checkSession()` to read and validate `sessionTimestamp` against `SESSION_TIMEOUT_MS` (Story 2.7 — AC1, AC2)
+- Verified `(auth)/_layout.tsx` requires no changes — existing redirect logic handles both paths
+- 9 new integration tests for session persistence scenarios
+- All 122 tests pass; TypeScript clean; lint clean

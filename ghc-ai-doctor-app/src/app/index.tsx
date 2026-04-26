@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { TextInput, Button, Text, HelperText, useTheme } from 'react-native-paper';
 import { router } from 'expo-router';
@@ -9,14 +9,22 @@ import { Typography } from '@/theme/typography';
 
 export default function LoginScreen() {
   const theme = useTheme();
-  const { login, sessionExpiredMessage } = useAuth();
+  const { login, sessionExpiredMessage, isAuthenticated, isLoading } = useAuth();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoginLoading, setIsLoginLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isAuthError, setIsAuthError] = useState(false);
   const [isNetworkError, setIsNetworkError] = useState(false);
+
+  // Redirect to dashboard if session is already valid (e.g. app relaunch within 30 min).
+  // Wait for isLoading to be false so checkSession() has finished before acting.
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace('/dashboard');
+    }
+  }, [isLoading, isAuthenticated]);
 
   // Task 3: Clear error when user starts typing
   function handleUsernameChange(value: string) {
@@ -40,7 +48,7 @@ export default function LoginScreen() {
   async function handleLogin() {
     if (!username.trim() || !password.trim()) return;
 
-    setIsLoading(true);
+    setIsLoginLoading(true);
     setErrorMessage('');
     setIsAuthError(false);
     setIsNetworkError(false);
@@ -66,7 +74,7 @@ export default function LoginScreen() {
       }
     } finally {
       // Task 2: Always reset loading so fields re-enable
-      setIsLoading(false);
+      setIsLoginLoading(false);
     }
   }
 
@@ -106,7 +114,7 @@ export default function LoginScreen() {
           autoCorrect={false}
           style={styles.input}
           mode="outlined"
-          disabled={isLoading}
+          disabled={isLoginLoading}
           error={isAuthError}
           testID="username-input"
         />
@@ -120,7 +128,7 @@ export default function LoginScreen() {
           autoCorrect={false}
           style={styles.input}
           mode="outlined"
-          disabled={isLoading}
+          disabled={isLoginLoading}
           error={isAuthError}
           testID="password-input"
         />
@@ -132,8 +140,8 @@ export default function LoginScreen() {
         <Button
           mode="contained"
           onPress={handleLogin}
-          loading={isLoading}
-          disabled={!username || !password || isLoading}
+          loading={isLoginLoading}
+          disabled={!username || !password || isLoginLoading}
           style={styles.button}
           testID="login-button"
         >
@@ -144,7 +152,7 @@ export default function LoginScreen() {
           <Button
             mode="outlined"
             onPress={handleLogin}
-            disabled={!username.trim() || !password.trim() || isLoading}
+            disabled={!username.trim() || !password.trim() || isLoginLoading}
             style={styles.retryButton}
             testID="retry-button"
           >

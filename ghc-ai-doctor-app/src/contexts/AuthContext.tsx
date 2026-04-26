@@ -55,10 +55,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Intentional: server-side logout failure must not block client-side cleanup
     }
 
-    // Use allSettled so both deletes are attempted even if one throws (patch: sequential → parallel)
+    // Use allSettled so all deletes are attempted even if one throws (patch: sequential → parallel)
     await Promise.allSettled([
       SecureStore.deleteItemAsync('sessionToken'),
       SecureStore.deleteItemAsync('sessionUser'),
+      SecureStore.deleteItemAsync('sessionTimestamp'),
     ]);
 
     setIsAuthenticated(false);
@@ -96,15 +97,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = await SecureStore.getItemAsync('sessionToken');
       const userJson = await SecureStore.getItemAsync('sessionUser');
+      const timestampStr = await SecureStore.getItemAsync('sessionTimestamp');
 
-      if (token && userJson) {
-        // Parse before setting state — if JSON is corrupt, no partial state is written
-        const parsedUser = JSON.parse(userJson) as SessionResponse['user'];
-        setIsAuthenticated(true);
-        setUser(parsedUser);
-        // Patch: clear any stale expiry message from a previous session
-        setSessionExpiredMessage(null);
-        startInactivityTimer();
+      if (token && userJson && timestampStr) {
+        const elapsed = Date.now() - parseInt(timestampStr, 10);
+
+        if (elapsed < SESSION_TIMEOUT_MS) {
+          // Session is still valid — restore it and start the inactivity timer
+          // Parse before setting state — if JSON is corrupt, no partial state is written
+          const parsedUser = JSON.parse(userJson) as SessionResponse['user'];
+          setIsAuthenticated(true);
+          setUser(parsedUser);
+          // Clear any stale expiry message from a previous session
+          setSessionExpiredMessage(null);
+          startInactivityTimer();
+        } else {
+          // Session has expired while app was closed — clean up all keys
+          await Promise.allSettled([
+            SecureStore.deleteItemAsync('sessionToken'),
+            SecureStore.deleteItemAsync('sessionUser'),
+            SecureStore.deleteItemAsync('sessionTimestamp'),
+          ]);
+          // Patch 2: explicitly reset auth state in expired branch (defensive — initial state
+          // is already false/null, but guards against future remount scenarios)
+          setIsAuthenticated(false);
+          setUser(null);
+          setSessionExpiredMessage('Session expired. Please log in again.');
+        }
+      } else if (token || userJson) {
+        // Patch 1: orphaned keys — token/user present but timestamp missing (legacy upgrade
+        // from pre-2.7 build, or partial write interrupted between setItemAsync calls).
+        // Cannot validate session age → treat as expired and clean up to prevent stale data.
+        await Promise.allSettled([
+          SecureStore.deleteItemAsync('sessionToken'),
+          SecureStore.deleteItemAsync('sessionUser'),
+          SecureStore.deleteItemAsync('sessionTimestamp'),
+        ]);
+        console.warn('checkSession: orphaned session keys found without timestamp — cleared');
       }
     } catch (error) {
       console.error('Session check failed:', error);
@@ -116,9 +145,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function login(username: string, password: string) {
     const response = await apiLogin(username, password);
 
-    // Persist session token and user data securely
+    // Persist session token, user data, and timestamp securely
     await SecureStore.setItemAsync('sessionToken', response.sessionId);
     await SecureStore.setItemAsync('sessionUser', JSON.stringify(response.user));
+    await SecureStore.setItemAsync('sessionTimestamp', Date.now().toString());
 
     setIsAuthenticated(true);
     setUser(response.user);
@@ -137,11 +167,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Logout API call failed:', error);
     } finally {
-      // Use allSettled so both deletes are attempted even if one throws,
+      // Use allSettled so all deletes are attempted even if one throws,
       // and state is always cleared regardless of SecureStore errors.
       await Promise.allSettled([
         SecureStore.deleteItemAsync('sessionToken'),
         SecureStore.deleteItemAsync('sessionUser'),
+        SecureStore.deleteItemAsync('sessionTimestamp'),
       ]);
       setIsAuthenticated(false);
       setUser(null);
