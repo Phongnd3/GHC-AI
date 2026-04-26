@@ -1,6 +1,6 @@
 # Story 2.1: Doctor Login with OpenMRS Credentials
 
-**Status:** ready-for-dev  
+**Status:** done  
 **Epic:** 2 - Authentication & Session Management  
 **Story ID:** 2.1  
 **Priority:** P0 - Blocking all authentication features
@@ -29,37 +29,37 @@ So that I can access my assigned patients on mobile without creating new credent
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Implement auth service with OpenMRS session API (AC: #1)
-  - [ ] Create `login()` function in `src/services/api/auth.ts`
-  - [ ] POST to `/openmrs/ws/rest/v1/session` with Basic Auth
-  - [ ] Extract session token from response
-  - [ ] Return typed `SessionResponse` interface
+- [x] Task 1: Implement auth service with OpenMRS session API (AC: #1)
+  - [x] Create `login()` function in `src/services/api/auth.ts`
+  - [x] POST to `/openmrs/ws/rest/v1/session` with Basic Auth
+  - [x] Extract session token from response
+  - [x] Return typed `SessionResponse` interface
   
-- [ ] Task 2: Create AuthContext for session management (AC: #1)
-  - [ ] Create `src/contexts/AuthContext.tsx`
-  - [ ] Implement `login()`, `logout()`, `isAuthenticated` state
-  - [ ] Store session token in Expo SecureStore
-  - [ ] Provide context to app via root layout
+- [x] Task 2: Create AuthContext for session management (AC: #1)
+  - [x] Create `src/contexts/AuthContext.tsx`
+  - [x] Implement `login()`, `logout()`, `isAuthenticated` state
+  - [x] Store session token in Expo SecureStore
+  - [x] Provide context to app via root layout
   
-- [ ] Task 3: Build login screen UI (AC: #1)
-  - [ ] Create `src/app/index.tsx` login screen
-  - [ ] Use Material Design 3 components (TextInput, Button)
-  - [ ] Apply OpenMRS O3 theme (teal brand colors)
-  - [ ] Add form validation (required fields)
-  - [ ] Show loading state during authentication
+- [x] Task 3: Build login screen UI (AC: #1)
+  - [x] Create `src/app/index.tsx` login screen
+  - [x] Use Material Design 3 components (TextInput, Button)
+  - [x] Apply OpenMRS O3 theme (teal brand colors)
+  - [x] Add form validation (required fields)
+  - [x] Show loading state during authentication
   
-- [ ] Task 4: Implement login flow (AC: #1)
-  - [ ] Connect login form to AuthContext
-  - [ ] Call `auth.login()` on form submit
-  - [ ] Store token in SecureStore on success
-  - [ ] Navigate to `/dashboard` on success
-  - [ ] Handle errors (covered in Story 2.2)
+- [x] Task 4: Implement login flow (AC: #1)
+  - [x] Connect login form to AuthContext
+  - [x] Call `auth.login()` on form submit
+  - [x] Store token in SecureStore on success
+  - [x] Navigate to `/dashboard` on success
+  - [x] Handle errors (covered in Story 2.2)
   
-- [ ] Task 5: Create protected route wrapper (AC: #1)
-  - [ ] Create `src/app/(auth)/_layout.tsx` for authenticated routes
-  - [ ] Check session token on mount
-  - [ ] Redirect to login if no valid token
-  - [ ] Prevent unauthorized access to dashboard
+- [x] Task 5: Create protected route wrapper (AC: #1)
+  - [x] Create `src/app/(auth)/_layout.tsx` for authenticated routes
+  - [x] Check session token on mount
+  - [x] Redirect to login if no valid token
+  - [x] Prevent unauthorized access to dashboard
 
 ---
 
@@ -792,3 +792,119 @@ This story is complete when:
 ---
 
 **Ultimate context engine analysis completed - comprehensive developer guide created**
+
+---
+
+## Dev Agent Record
+
+### Implementation Plan
+
+Implemented all 5 tasks following the red-green-refactor TDD cycle:
+
+1. **Auth Service** — `login()` uses `btoa()` for Basic Auth encoding, POSTs to `/session`, maps full API response to typed `SessionResponse`. `logout()` DELETEs `/session`. Updated `types.ts` to include `username`, `systemId`, and `person` fields.
+
+2. **AuthContext** — React Context with `isAuthenticated`, `user`, `isLoading` state. Session restored from SecureStore on mount. `login()` calls API then persists `sessionToken` + `sessionUser` to SecureStore. `logout()` always clears local session even if API call fails.
+
+3. **Login Screen** — `KeyboardAvoidingView` wrapper, `react-native-paper` TextInput (outlined mode) and Button (contained mode), `useTheme()` for colors, `Spacing`/`Typography` tokens, `testID` props for testability. Button disabled when fields empty or loading.
+
+4. **Login Flow** — `handleLogin()` calls `useAuth().login()` then `router.replace('/dashboard')`. Errors logged (full handling in Story 2.2).
+
+5. **Protected Route Layout** — `useEffect` watches `isAuthenticated`/`isLoading`, redirects to `/` when unauthenticated. Shows `LoadingSkeleton` during session check. Returns `null` if unauthenticated (prevents flash). Also created `dashboard.tsx` placeholder and updated root `_layout.tsx` to wrap with `AuthProvider`.
+
+**Key technical decision:** Component tests for `LoginScreen` mock `react-native-paper` to avoid a pre-existing React version mismatch (`react@19.2.5` vs `react-native-renderer@19.1.0`) that causes `TextInput`'s `Animated` API to fail when connecting to the native renderer in the test environment. This is consistent with the project's existing test patterns.
+
+**Pre-existing failure noted:** `LoadingSkeleton.test.tsx` was already failing before this story due to the same React version mismatch (its `Animated.loop` triggers the native renderer). This is not a regression introduced by this story.
+
+### Debug Log
+
+- React version mismatch (`react@19.2.5` vs `react-native-renderer@19.1.0`) causes `Animated` API to fail in tests when native renderer is loaded. Resolved by mocking `react-native-paper` in component tests.
+- Expo Router type definitions in `.expo/types/router.d.ts` needed manual update to include `/dashboard` route for TypeScript to accept `router.replace('/dashboard')`.
+
+### Completion Notes
+
+- ✅ Task 1: Auth service `login()`/`logout()` implemented and tested (6 unit tests pass)
+- ✅ Task 2: AuthContext with SecureStore persistence implemented and tested (10 integration tests pass)
+- ✅ Task 3: Login screen UI with MD3 components, O3 theme, form validation, loading state (7 component tests pass)
+- ✅ Task 4: Login flow connects form → AuthContext → SecureStore → navigation (covered by Tasks 2 & 3 tests)
+- ✅ Task 5: Protected route layout with session check, redirect, LoadingSkeleton (3 tests pass)
+- ✅ TypeScript compilation: 0 errors
+- ✅ 26 new tests added, all passing
+- ✅ No new regressions introduced (pre-existing LoadingSkeleton failure unchanged)
+- ✅ AC1 satisfied: authenticates via OpenMRS REST API, redirects to dashboard, stores token securely
+
+---
+
+## File List
+
+### New Files
+- `ghc-ai-doctor-app/src/services/api/__tests__/auth.test.ts`
+- `ghc-ai-doctor-app/src/contexts/AuthContext.tsx`
+- `ghc-ai-doctor-app/src/contexts/__tests__/AuthContext.test.tsx`
+- `ghc-ai-doctor-app/src/app/__tests__/index.test.tsx`
+- `ghc-ai-doctor-app/src/app/__tests__/auth-layout.test.tsx`
+- `ghc-ai-doctor-app/src/app/(auth)/_layout.tsx`
+- `ghc-ai-doctor-app/src/app/(auth)/dashboard.tsx`
+
+### Modified Files
+- `ghc-ai-doctor-app/src/services/api/auth.ts` — implemented `login()` and `logout()`
+- `ghc-ai-doctor-app/src/services/api/types.ts` — extended `SessionResponse` with `username`, `systemId`, `person`
+- `ghc-ai-doctor-app/src/services/api/index.ts` — exports `login`, `logout`, `apiClient`, `SessionResponse`
+- `ghc-ai-doctor-app/src/contexts/index.ts` — exports `AuthProvider`, `useAuth`
+- `ghc-ai-doctor-app/src/app/index.tsx` — replaced placeholder with full login screen
+- `ghc-ai-doctor-app/src/app/_layout.tsx` — wrapped with `AuthProvider`, added named screens
+- `ghc-ai-doctor-app/.expo/types/router.d.ts` — added `/dashboard` route type
+
+---
+
+## Change Log
+
+- 2026-04-25: Implemented Story 2.1 - Doctor Login with OpenMRS Credentials
+  - Auth service: `login()` with Basic Auth, `logout()` with DELETE /session
+  - AuthContext: session management with SecureStore persistence
+  - Login screen: MD3 UI with form validation and loading state
+  - Protected route layout: session check with redirect and loading skeleton
+  - Dashboard placeholder for navigation target
+  - 26 new tests added across 4 test files
+  - TypeScript compilation: 0 errors
+
+---
+
+## Senior Developer Review (AI)
+
+**Review Date:** 2026-04-25  
+**Outcome:** Changes Requested  
+**Layers:** Blind Hunter · Edge Case Hunter · Acceptance Auditor  
+
+### Action Items
+
+**High Severity**
+- [x] [R1] `authenticated: false` response not checked — silent login bypass [`src/services/api/auth.ts`]
+- [x] [R2] Request interceptor overwrites Basic Auth header during login [`src/services/api/client.ts`]
+- [x] [R3] `REQUEST_TIMEOUT` is 10s — violates the 3-second AC [`src/config/env.ts` / `src/services/api/auth.ts`]
+- [x] [R4] `logout()` finally block has no error handling — stuck authenticated state [`src/contexts/AuthContext.tsx`]
+
+**Medium Severity**
+- [x] [R5] `checkSession()` sets `isAuthenticated=true` before `JSON.parse` — partial state on corrupt data [`src/contexts/AuthContext.tsx`]
+- [x] [R6] `btoa()` throws on non-Latin1 characters — use `Buffer.from().toString('base64')` [`src/services/api/auth.ts`]
+- [x] [R7] Double navigation race: 401 interceptor + AuthLayout useEffect both call `router.replace('/')` [`src/services/api/client.ts` + `src/app/(auth)/_layout.tsx`] — deferred to Story 2.4
+
+**Low Severity**
+- [x] [R8] Hardcoded spacing in `dashboard.tsx` — use `Spacing` tokens [`src/app/(auth)/dashboard.tsx`]
+- [x] [R9] `<Button><Text>Login</Text></Button>` double-wrapped text — configure lint rule instead [`src/app/index.tsx`]
+
+**Deferred**
+- [x] [D1] No error UI for login failures — deferred to Story 2.2 per spec
+- [x] [D2] Session not validated against server on mount — deferred to Story 2.4
+- [x] [D3] `logout()` swallows server-side failure — intentional per spec
+
+### Review Follow-ups (AI)
+
+- [x] [AI-Review][High] R1: Check `response.data.authenticated` in `login()` and throw if false
+- [x] [AI-Review][High] R2: Skip Bearer header in interceptor if `Authorization` already set on request
+- [x] [AI-Review][High] R3: Add `timeout: 3000` override to login POST call in `auth.ts`
+- [x] [AI-Review][High] R4: Wrap SecureStore calls in `logout()` finally block with try/catch or `Promise.allSettled`
+- [x] [AI-Review][Med] R5: Parse `userJson` before calling `setIsAuthenticated(true)` in `checkSession()`
+- [x] [AI-Review][Med] R6: Replace `btoa()` with `Buffer.from().toString('base64')` in `auth.ts`
+- [x] [AI-Review][Med] R7: Guard 401 interceptor to not navigate if already on login screen; let AuthLayout handle navigation — deferred to Story 2.4
+- [x] [AI-Review][Low] R8: Replace hardcoded `24` and `8` with `Spacing.xxl` / `Spacing.md` in `dashboard.tsx`
+- [x] [AI-Review][Low] R9: Add `Button` to `no-raw-text` skip list in `.eslintrc.js`; use bare string child in Button

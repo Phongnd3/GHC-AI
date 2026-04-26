@@ -23,20 +23,32 @@ describe('apiClient', () => {
     expect(apiClient.defaults.timeout).toBe(10000);
   });
 
-  it('attaches Authorization header when token exists', async () => {
-    (SecureStore.getItemAsync as jest.Mock).mockResolvedValue('test-token');
+  it('attaches Cookie header when token exists', async () => {
+    (SecureStore.getItemAsync as jest.Mock).mockResolvedValue('test-session-id');
     const config = await apiClient.interceptors.request.handlers![0].fulfilled({
       headers: new axios.AxiosHeaders(),
     } as any);
-    expect(config.headers.get('Authorization')).toBe('Bearer test-token');
+    expect(config.headers.get('Cookie')).toBe('JSESSIONID=test-session-id');
   });
 
-  it('skips Authorization header when no token', async () => {
+  it('skips Cookie header when no token', async () => {
     (SecureStore.getItemAsync as jest.Mock).mockResolvedValue(null);
     const config = await apiClient.interceptors.request.handlers![0].fulfilled({
       headers: new axios.AxiosHeaders(),
     } as any);
-    expect(config.headers.get('Authorization')).toBeUndefined();
+    expect(config.headers.get('Cookie')).toBeUndefined();
+  });
+
+  it('does not overwrite Authorization header already set on request (e.g. Basic Auth for login)', async () => {
+    (SecureStore.getItemAsync as jest.Mock).mockResolvedValue('stale-token');
+    const headers = new axios.AxiosHeaders();
+    headers.set('Authorization', 'Basic dXNlcjpwYXNz');
+    const config = await apiClient.interceptors.request.handlers![0].fulfilled({
+      headers,
+    } as any);
+    // Basic Auth header must be preserved — Cookie must NOT be set when Authorization is present
+    expect(config.headers.get('Authorization')).toBe('Basic dXNlcjpwYXNz');
+    expect(config.headers.get('Cookie')).toBeUndefined();
   });
 
   it('clears token and redirects on 401', async () => {

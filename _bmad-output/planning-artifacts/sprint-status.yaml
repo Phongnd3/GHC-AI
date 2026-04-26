@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: "2026-04-24T12:09:14+07:00"
-last_updated: "2026-04-24T12:49:47+07:00"
+last_updated: "2026-04-25T14:00:00+07:00"
 project: "GHC Mobile App - OpenMRS Patient Management"
 project_key: "NOKEY"
 tracking_system: "file-system"
@@ -52,7 +52,9 @@ development_status:
   1-7-create-base-ui-components: done
   1-8-configure-environment-variables: done
   epic-1-retrospective: optional
- 
+  epic-2: in-progress
+  2-1-doctor-login-openmrs-credentials: done
+
 
 time_tracking:
   # Populated automatically by dev-story workflow
