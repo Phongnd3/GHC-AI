@@ -4,9 +4,15 @@ import LoginScreen from '../index';
 import { useAuth } from '@/contexts/AuthContext';
 import { mapErrorToUserMessage, ErrorType } from '@/utils/errorHandler';
 import { router } from 'expo-router';
+import { preventScreenCaptureAsync, allowScreenCaptureAsync } from 'expo-screen-capture';
 
 jest.mock('@/contexts/AuthContext', () => ({
   useAuth: jest.fn(),
+}));
+
+jest.mock('expo-screen-capture', () => ({
+  preventScreenCaptureAsync: jest.fn().mockResolvedValue(undefined),
+  allowScreenCaptureAsync: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock('@/utils/errorHandler', () => ({
@@ -519,5 +525,21 @@ describe('LoginScreen', () => {
     // Both should be present
     expect(getByText('Session expired due to inactivity. Please log in again.')).toBeTruthy();
     expect(getByText('GHC-AI Doctor')).toBeTruthy();
+  });
+
+  // Story 2.5: Login screen must NOT have screenshot prevention
+  it('does NOT call preventScreenCaptureAsync on the login screen', () => {
+    // P4: explicit clear ensures this assertion is non-vacuous even if other
+    // tests in this file somehow triggered the mock
+    jest.clearAllMocks();
+    (useAuth as jest.Mock).mockReturnValue({
+      login: mockLogin,
+      sessionExpiredMessage: null,
+    });
+
+    render(<LoginScreen />);
+
+    expect(preventScreenCaptureAsync).not.toHaveBeenCalled();
+    expect(allowScreenCaptureAsync).not.toHaveBeenCalled();
   });
 });

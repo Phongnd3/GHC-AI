@@ -29,3 +29,7 @@ This file tracks issues identified during code reviews that are deferred to late
 ## Deferred from: code review of story-2.4-automatic-session-timeout (2026-04-26)
 
 - **`JSON.parse(userJson)` blind-cast without schema validation in `checkSession()`** — pre-existing in `AuthContext.tsx` from Story 2.1. A corrupt but parseable JSON object would silently set `user` to an unexpected shape. Consider adding a runtime type guard (e.g., checking for required fields like `uuid` and `username`) in a future hardening pass.
+
+## Deferred from: code review of story-2.5-prevent-screenshots-clinical-screens (2026-04-26)
+
+- **FLAG_SECURE set on login screen window via deep-link into `(auth)/` before auth resolves** — If a deep link targets an `(auth)/` route and Expo Router mounts `AuthLayout` before `useAuth` resolves `isAuthenticated`, `usePreventScreenCapture()` fires and FLAG_SECURE is set. If auth then fails and the router redirects to `/`, the login screen renders inside the same Android window with FLAG_SECURE active until `AuthLayout` fully unmounts. Requires Expo Router navigation architecture change to fix; deferred as out of scope for this story.

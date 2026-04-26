@@ -2,6 +2,7 @@ import React from 'react';
 import { render, waitFor } from '@testing-library/react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
+import { preventScreenCaptureAsync, allowScreenCaptureAsync } from 'expo-screen-capture';
 
 jest.mock('@/contexts/AuthContext', () => ({
   useAuth: jest.fn(),
@@ -27,6 +28,12 @@ jest.mock('expo-router', () => ({
     current: null, // null triggers the early-return guard in the useEffect
     addListener: jest.fn(),
   })),
+}));
+
+// Mock expo-screen-capture imperative API
+jest.mock('expo-screen-capture', () => ({
+  preventScreenCaptureAsync: jest.fn().mockResolvedValue(undefined),
+  allowScreenCaptureAsync: jest.fn().mockResolvedValue(undefined),
 }));
 
 // Mock LoadingSkeleton — require() is used because jest.mock factories cannot
@@ -93,5 +100,61 @@ describe('AuthLayout', () => {
 
     // Should NOT redirect to login when authenticated
     expect(router.replace).not.toHaveBeenCalled();
+  });
+});
+
+// Story 2.5: Screenshot prevention tests
+describe('AuthLayout - screenshot prevention', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('activates screen capture prevention when authenticated', () => {
+    (useAuth as jest.Mock).mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      resetInactivityTimer: jest.fn(),
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const AuthLayout = require('../(auth)/_layout').default as React.ComponentType;
+    render(<AuthLayout />);
+
+    expect(preventScreenCaptureAsync).toHaveBeenCalledTimes(1);
+    expect(allowScreenCaptureAsync).not.toHaveBeenCalled();
+  });
+
+  it('does NOT activate screen capture prevention when not authenticated (P2: distinct unauthenticated path)', () => {
+    // When isAuthenticated is false, the useEffect guard skips preventScreenCaptureAsync.
+    // The component returns null and router.replace fires — FLAG_SECURE is never set.
+    (useAuth as jest.Mock).mockReturnValue({
+      isAuthenticated: false,
+      isLoading: false,
+      resetInactivityTimer: jest.fn(),
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const AuthLayout = require('../(auth)/_layout').default as React.ComponentType;
+    render(<AuthLayout />);
+
+    expect(preventScreenCaptureAsync).not.toHaveBeenCalled();
+  });
+
+  it('releases screen capture prevention on unmount when authenticated', () => {
+    (useAuth as jest.Mock).mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      resetInactivityTimer: jest.fn(),
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const AuthLayout = require('../(auth)/_layout').default as React.ComponentType;
+    const { unmount } = render(<AuthLayout />);
+
+    expect(preventScreenCaptureAsync).toHaveBeenCalledTimes(1);
+
+    unmount();
+
+    expect(allowScreenCaptureAsync).toHaveBeenCalledTimes(1);
   });
 });
