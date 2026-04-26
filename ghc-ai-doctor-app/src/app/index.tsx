@@ -16,6 +16,7 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isAuthError, setIsAuthError] = useState(false);
+  const [isNetworkError, setIsNetworkError] = useState(false);
 
   // Task 3: Clear error when user starts typing
   function handleUsernameChange(value: string) {
@@ -23,6 +24,7 @@ export default function LoginScreen() {
     if (errorMessage) {
       setErrorMessage('');
       setIsAuthError(false);
+      setIsNetworkError(false);
     }
   }
 
@@ -31,6 +33,7 @@ export default function LoginScreen() {
     if (errorMessage) {
       setErrorMessage('');
       setIsAuthError(false);
+      setIsNetworkError(false);
     }
   }
 
@@ -40,6 +43,7 @@ export default function LoginScreen() {
     setIsLoading(true);
     setErrorMessage('');
     setIsAuthError(false);
+    setIsNetworkError(false);
 
     try {
       await login(username, password);
@@ -50,9 +54,15 @@ export default function LoginScreen() {
       if (mapped.type === ErrorType.AUTH_ERROR) {
         setErrorMessage('Invalid username or password. Please try again.');
         setIsAuthError(true);
+        setIsNetworkError(false);
+      } else if (mapped.type === ErrorType.NETWORK_ERROR) {
+        setErrorMessage('No internet connection. Please check your WiFi.');
+        setIsAuthError(false);
+        setIsNetworkError(true);
       } else {
         setErrorMessage(mapped.message);
         setIsAuthError(false);
+        setIsNetworkError(false);
       }
     } finally {
       // Task 2: Always reset loading so fields re-enable
@@ -118,6 +128,18 @@ export default function LoginScreen() {
         >
           Login
         </Button>
+
+        {isNetworkError && (
+          <Button
+            mode="outlined"
+            onPress={handleLogin}
+            disabled={!username.trim() || !password.trim() || isLoading}
+            style={styles.retryButton}
+            testID="retry-button"
+          >
+            Retry
+          </Button>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -137,6 +159,9 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: Spacing.lg,
+  },
+  retryButton: {
+    marginTop: Spacing.md,
   },
   subtitle: {
     ...Typography.bodyLarge,

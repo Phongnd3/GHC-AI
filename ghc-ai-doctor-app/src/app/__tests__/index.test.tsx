@@ -223,7 +223,7 @@ describe('LoginScreen', () => {
     });
   });
 
-  it('should pass non-auth errors through unchanged', async () => {
+  it('should show WiFi-specific message for NETWORK_ERROR type', async () => {
     mockLogin.mockRejectedValue(new Error('network'));
     (mapErrorToUserMessage as jest.Mock).mockReturnValue({
       type: ErrorType.NETWORK_ERROR,
@@ -237,9 +237,7 @@ describe('LoginScreen', () => {
     fireEvent.press(getByText('Login'));
 
     await waitFor(() => {
-      expect(
-        getByText('No internet connection. Please check your network and try again.')
-      ).toBeTruthy();
+      expect(getByText('No internet connection. Please check your WiFi.')).toBeTruthy();
     });
   });
 
@@ -332,5 +330,155 @@ describe('LoginScreen', () => {
   it('should not show error message initially', () => {
     const { queryByText } = render(<LoginScreen />);
     expect(queryByText('Invalid username or password. Please try again.')).toBeNull();
+  });
+
+  // ── Story 2.3: Network Error Handling ──────────────────────────────────────
+
+  it('should show network error message and Retry button on network failure', async () => {
+    mockLogin.mockRejectedValue(new Error('Network Error'));
+    (mapErrorToUserMessage as jest.Mock).mockReturnValue({
+      type: ErrorType.NETWORK_ERROR,
+      message: 'No internet connection. Please check your network and try again.',
+    });
+
+    const { getByTestId, getByText } = render(<LoginScreen />);
+
+    fireEvent.changeText(getByTestId('username-input'), 'doctor');
+    fireEvent.changeText(getByTestId('password-input'), 'pass');
+    fireEvent.press(getByText('Login'));
+
+    await waitFor(() => {
+      expect(getByText('No internet connection. Please check your WiFi.')).toBeTruthy();
+      expect(getByTestId('retry-button')).toBeTruthy();
+    });
+  });
+
+  it('should NOT show Retry button for auth errors', async () => {
+    mockLogin.mockRejectedValue(new Error('401'));
+    (mapErrorToUserMessage as jest.Mock).mockReturnValue({
+      type: ErrorType.AUTH_ERROR,
+      message: 'Session expired. Please log in again.',
+    });
+
+    const { getByTestId, getByText, queryByTestId } = render(<LoginScreen />);
+
+    fireEvent.changeText(getByTestId('username-input'), 'wronguser');
+    fireEvent.changeText(getByTestId('password-input'), 'wrongpass');
+    fireEvent.press(getByText('Login'));
+
+    await waitFor(() => {
+      expect(getByText('Invalid username or password. Please try again.')).toBeTruthy();
+      expect(queryByTestId('retry-button')).toBeNull();
+    });
+  });
+
+  it('should retry login when Retry button is pressed', async () => {
+    mockLogin.mockRejectedValueOnce(new Error('Network Error')).mockResolvedValueOnce(undefined);
+
+    (mapErrorToUserMessage as jest.Mock).mockReturnValue({
+      type: ErrorType.NETWORK_ERROR,
+      message: 'No internet connection. Please check your network and try again.',
+    });
+
+    const { getByTestId, getByText, queryByTestId } = render(<LoginScreen />);
+
+    fireEvent.changeText(getByTestId('username-input'), 'doctor');
+    fireEvent.changeText(getByTestId('password-input'), 'pass');
+    fireEvent.press(getByText('Login'));
+
+    await waitFor(() => {
+      expect(getByTestId('retry-button')).toBeTruthy();
+    });
+
+    fireEvent.press(getByTestId('retry-button'));
+
+    await waitFor(() => {
+      expect(mockLogin).toHaveBeenCalledTimes(2);
+      expect(router.replace).toHaveBeenCalledWith('/dashboard');
+      expect(queryByTestId('retry-button')).toBeNull();
+    });
+  });
+
+  it('should clear network error and Retry button when user edits username field', async () => {
+    mockLogin.mockRejectedValue(new Error('Network Error'));
+    (mapErrorToUserMessage as jest.Mock).mockReturnValue({
+      type: ErrorType.NETWORK_ERROR,
+      message: 'No internet connection. Please check your network and try again.',
+    });
+
+    const { getByTestId, getByText, queryByTestId, queryByText } = render(<LoginScreen />);
+
+    fireEvent.changeText(getByTestId('username-input'), 'doctor');
+    fireEvent.changeText(getByTestId('password-input'), 'pass');
+    fireEvent.press(getByText('Login'));
+
+    await waitFor(() => {
+      expect(getByTestId('retry-button')).toBeTruthy();
+    });
+
+    fireEvent.changeText(getByTestId('username-input'), 'newdoctor');
+
+    expect(queryByTestId('retry-button')).toBeNull();
+    expect(queryByText('No internet connection. Please check your WiFi.')).toBeNull();
+  });
+
+  it('should clear network error and Retry button when user edits password field', async () => {
+    mockLogin.mockRejectedValue(new Error('Network Error'));
+    (mapErrorToUserMessage as jest.Mock).mockReturnValue({
+      type: ErrorType.NETWORK_ERROR,
+      message: 'No internet connection. Please check your network and try again.',
+    });
+
+    const { getByTestId, getByText, queryByTestId, queryByText } = render(<LoginScreen />);
+
+    fireEvent.changeText(getByTestId('username-input'), 'doctor');
+    fireEvent.changeText(getByTestId('password-input'), 'pass');
+    fireEvent.press(getByText('Login'));
+
+    await waitFor(() => {
+      expect(getByTestId('retry-button')).toBeTruthy();
+    });
+
+    fireEvent.changeText(getByTestId('password-input'), 'newpass');
+
+    expect(queryByTestId('retry-button')).toBeNull();
+    expect(queryByText('No internet connection. Please check your WiFi.')).toBeNull();
+  });
+
+  it('should not navigate to dashboard on network error', async () => {
+    mockLogin.mockRejectedValue(new Error('Network Error'));
+    (mapErrorToUserMessage as jest.Mock).mockReturnValue({
+      type: ErrorType.NETWORK_ERROR,
+      message: 'No internet connection. Please check your network and try again.',
+    });
+
+    const { getByTestId, getByText } = render(<LoginScreen />);
+
+    fireEvent.changeText(getByTestId('username-input'), 'doctor');
+    fireEvent.changeText(getByTestId('password-input'), 'pass');
+    fireEvent.press(getByText('Login'));
+
+    await waitFor(() => {
+      expect(router.replace).not.toHaveBeenCalled();
+    });
+  });
+
+  it('should NOT show Retry button for server errors', async () => {
+    mockLogin.mockRejectedValue(new Error('500'));
+    (mapErrorToUserMessage as jest.Mock).mockReturnValue({
+      type: ErrorType.SERVER_ERROR,
+      message: 'Server unavailable. Please try again later.',
+    });
+
+    const { getByTestId, getByText, queryByTestId } = render(<LoginScreen />);
+
+    fireEvent.changeText(getByTestId('username-input'), 'doctor');
+    fireEvent.changeText(getByTestId('password-input'), 'pass');
+    fireEvent.press(getByText('Login'));
+
+    await waitFor(() => {
+      expect(getByText('Server unavailable. Please try again later.')).toBeTruthy();
+      expect(queryByTestId('retry-button')).toBeNull();
+    });
   });
 });
