@@ -8,6 +8,7 @@ import type { SessionResponse } from '@/services/api/types';
 interface AuthContextType {
   isAuthenticated: boolean;
   user: SessionResponse['user'] | null;
+  providerUuid: string | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
@@ -20,6 +21,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<SessionResponse['user'] | null>(null);
+  const [providerUuid, setProviderUuid] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sessionExpiredMessage, setSessionExpiredMessage] = useState<string | null>(null);
 
@@ -64,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setIsAuthenticated(false);
     setUser(null);
+    setProviderUuid(null);
     setSessionExpiredMessage('Session expired due to inactivity. Please log in again.');
 
     // Patch: wrap router.replace in try/catch — navigation can fail if app is backgrounded
@@ -105,9 +108,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (elapsed < SESSION_TIMEOUT_MS) {
           // Session is still valid — restore it and start the inactivity timer
           // Parse before setting state — if JSON is corrupt, no partial state is written
-          const parsedUser = JSON.parse(userJson) as SessionResponse['user'];
+          const parsedSession = JSON.parse(userJson) as SessionResponse['user'] & { providerUuid?: string };
           setIsAuthenticated(true);
-          setUser(parsedUser);
+          setUser(parsedSession);
+          setProviderUuid(parsedSession.providerUuid ?? null);
           // Clear any stale expiry message from a previous session
           setSessionExpiredMessage(null);
           startInactivityTimer();
@@ -122,6 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // is already false/null, but guards against future remount scenarios)
           setIsAuthenticated(false);
           setUser(null);
+          setProviderUuid(null);
           setSessionExpiredMessage('Session expired. Please log in again.');
         }
       } else if (token || userJson) {
@@ -145,13 +150,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function login(username: string, password: string) {
     const response = await apiLogin(username, password);
 
-    // Persist session token, user data, and timestamp securely
+    const providerUuidValue = response.currentProvider?.uuid ?? null;
+    // Persist session token, user data (including providerUuid), and timestamp securely
+    const userWithProvider = { ...response.user, providerUuid: providerUuidValue };
     await SecureStore.setItemAsync('sessionToken', response.sessionId);
-    await SecureStore.setItemAsync('sessionUser', JSON.stringify(response.user));
+    await SecureStore.setItemAsync('sessionUser', JSON.stringify(userWithProvider));
     await SecureStore.setItemAsync('sessionTimestamp', Date.now().toString());
 
     setIsAuthenticated(true);
     setUser(response.user);
+    setProviderUuid(providerUuidValue);
     setSessionExpiredMessage(null);
     startInactivityTimer();
   }
@@ -176,6 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ]);
       setIsAuthenticated(false);
       setUser(null);
+      setProviderUuid(null);
     }
   }
 
@@ -184,6 +193,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         isAuthenticated,
         user,
+        providerUuid,
         login,
         logout,
         isLoading,

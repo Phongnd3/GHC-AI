@@ -84,6 +84,7 @@ export async function login(username: string, password: string): Promise<Session
   return {
     sessionId,
     authenticated: response.data.authenticated,
+    currentProvider: response.data.currentProvider ?? null,
     user: {
       uuid: userData.uuid,
       display: userData.display,
