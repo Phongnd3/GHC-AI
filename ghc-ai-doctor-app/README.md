@@ -34,6 +34,32 @@ npm start
 npm run android
 ```
 
+## Running on a Physical Device (Expo Go)
+
+The fastest way to preview the app on your phone — no cable, no emulator needed.
+
+**Step 1 — Install Expo Go on your phone**
+
+- iOS: [App Store → Expo Go](https://apps.apple.com/app/expo-go/id982107779)
+- Android: [Play Store → Expo Go](https://play.google.com/store/apps/details?id=host.exp.exponent)
+
+**Step 2 — Start the dev server**
+
+```bash
+npm start
+```
+
+A QR code will appear in your terminal.
+
+**Step 3 — Scan the QR code**
+
+- **iOS:** Open the default Camera app, point it at the QR code, and tap the banner that appears.
+- **Android:** Open the Expo Go app, tap **"Scan QR code"**, and point it at the QR code.
+
+The app will bundle and open on your device. Any code change you save will hot-reload automatically.
+
+> **Note:** Your phone and computer must be on the **same Wi-Fi network**. If the connection fails, press `w` in the terminal to try tunnel mode (`npm start -- --tunnel`).
+
 ## Environment Configuration
 
 The app supports multiple environments (development, staging, production) with different configurations.
