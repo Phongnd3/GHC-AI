@@ -60,6 +60,7 @@ development_status:
   2-5-prevent-screenshots-clinical-screens: done
   2-6-doctor-logout-with-confirmation: done
   2-7-session-persistence-across-app-restarts: done
+  2-8-bug-login-fails-on-first-attempt: review
   2-8-bug-login-fails-on-first-attempt: ready-for-dev
 
 

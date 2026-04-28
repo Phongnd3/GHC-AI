@@ -30,19 +30,13 @@ export async function login(username: string, password: string): Promise<Session
   // Buffer is not available in Hermes (iOS/Android JS engine).
   const credentials = btoa(unescape(encodeURIComponent(`${username}:${password}`)));
 
-  // Invalidate any existing unauthenticated session before attempting login.
-  // OpenMRS issues a JSESSIONID even for failed auth (200 + authenticated: false).
-  // The native HTTP layer caches that cookie and sends it on the next request,
-  // causing OpenMRS to reuse the old session and skip the Set-Cookie header on
-  // a subsequent successful login — making sessionId extraction fail.
-  // Deleting the session first forces OpenMRS to issue a fresh JSESSIONID.
-  try {
-    await apiClient.delete('/session', { _isLoginRequest: true } as Parameters<
-      typeof apiClient.delete
-    >[1] & { _isLoginRequest: boolean });
-  } catch {
-    // Ignore errors — the session may not exist; we just want a clean slate.
-  }
+  // NOTE: Do NOT send a pre-login DELETE /session here.
+  // The iOS native HTTP stack caches the JSESSIONID cookie from the DELETE response
+  // and automatically attaches it to the subsequent POST. OpenMRS then reuses the
+  // existing session and skips the Set-Cookie header on the POST response, causing
+  // JSESSIONID extraction to fail on the first login attempt.
+  // The request interceptor in client.ts already skips attaching stored cookies
+  // for _isLoginRequest calls, which is sufficient to get a fresh session.
 
   const response = await apiClient.post('/session', {}, {
     timeout: LOGIN_TIMEOUT,

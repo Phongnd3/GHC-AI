@@ -14,11 +14,20 @@ export const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
-    const token = await SecureStore.getItemAsync('sessionToken');
-    if (token && !config.headers.get('Authorization')) {
-      // OpenMRS uses cookie-based sessions — send JSESSIONID as a Cookie header.
-      // React Native does not handle cookies automatically like a browser.
-      config.headers.set('Cookie', `JSESSIONID=${token}`);
+    // Never attach a stored session cookie to login requests.
+    // If a stale JSESSIONID is sent on a login POST, OpenMRS reuses the old
+    // session and returns the existing session data without a Set-Cookie header
+    // in the response — causing sessionId extraction to fail.
+    const isLoginRequest =
+      (config as typeof config & { _isLoginRequest?: boolean })._isLoginRequest === true;
+
+    if (!isLoginRequest) {
+      const token = await SecureStore.getItemAsync('sessionToken');
+      if (token && !config.headers.get('Authorization')) {
+        // OpenMRS uses cookie-based sessions — send JSESSIONID as a Cookie header.
+        // React Native does not handle cookies automatically like a browser.
+        config.headers.set('Cookie', `JSESSIONID=${token}`);
+      }
     }
     return config;
   },

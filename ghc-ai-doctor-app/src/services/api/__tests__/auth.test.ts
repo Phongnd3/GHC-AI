@@ -89,6 +89,19 @@ describe('auth service', () => {
       expect(result.sessionId).toBe('array-session-id');
     });
 
+    it('should NOT call DELETE /session before login (bug fix: pre-login DELETE caused iOS cookie caching)', async () => {
+      // Regression test for Story 2.8:
+      // The pre-login DELETE /session caused iOS to cache the JSESSIONID from the
+      // DELETE response and attach it to the subsequent POST, making OpenMRS reuse
+      // the old session and skip Set-Cookie on the POST — breaking first-attempt login.
+      (apiClient.post as jest.Mock).mockResolvedValue(makeLoginResponse());
+
+      await login('testuser', 'password');
+
+      expect(apiClient.delete).not.toHaveBeenCalled();
+      expect(apiClient.post).toHaveBeenCalledTimes(1);
+    });
+
     it('should return a typed SessionResponse', async () => {
       (apiClient.post as jest.Mock).mockResolvedValue(makeLoginResponse());
 

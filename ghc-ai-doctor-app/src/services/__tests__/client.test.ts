@@ -51,6 +51,18 @@ describe('apiClient', () => {
     expect(config.headers.get('Cookie')).toBeUndefined();
   });
 
+  it('does NOT attach Cookie header when _isLoginRequest is true (Story 2.8 regression guard)', async () => {
+    // Regression test: if a stale JSESSIONID is sent on a login POST, OpenMRS reuses
+    // the old session and skips Set-Cookie in the response — breaking first-attempt login.
+    (SecureStore.getItemAsync as jest.Mock).mockResolvedValue('stale-token');
+    const config = await apiClient.interceptors.request.handlers![0].fulfilled({
+      headers: new axios.AxiosHeaders(),
+      _isLoginRequest: true,
+    } as any);
+    expect(SecureStore.getItemAsync).not.toHaveBeenCalled();
+    expect(config.headers.get('Cookie')).toBeUndefined();
+  });
+
   it('clears token and redirects on 401', async () => {
     const error = { response: { status: 401 } };
     await expect(apiClient.interceptors.response.handlers![0].rejected!(error)).rejects.toEqual(
