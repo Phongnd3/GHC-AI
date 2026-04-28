@@ -329,4 +329,47 @@ describe('usePatients', () => {
     expect(result.current.error).toBe(networkError);
     expect(result.current.isLoading).toBe(false);
   });
+
+  it('returns isRefreshing=true when SWR is validating with existing data', () => {
+    const visit = makeVisit();
+    (useSWR as jest.Mock).mockReturnValue({
+      data: [visit],
+      error: undefined,
+      isValidating: true,
+      mutate: mockMutate,
+    });
+
+    const { result } = renderHook(() => usePatients('doctor-uuid'));
+
+    expect(result.current.isRefreshing).toBe(true);
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('returns isRefreshing=false when data is undefined (initial load)', () => {
+    (useSWR as jest.Mock).mockReturnValue({
+      data: undefined,
+      error: undefined,
+      isValidating: true,
+      mutate: mockMutate,
+    });
+
+    const { result } = renderHook(() => usePatients('doctor-uuid'));
+
+    expect(result.current.isRefreshing).toBe(false);
+    expect(result.current.isLoading).toBe(true);
+  });
+
+  it('returns isRefreshing=false when isValidating=false', () => {
+    const visit = makeVisit();
+    (useSWR as jest.Mock).mockReturnValue({
+      data: [visit],
+      error: undefined,
+      isValidating: false,
+      mutate: mockMutate,
+    });
+
+    const { result } = renderHook(() => usePatients('doctor-uuid'));
+
+    expect(result.current.isRefreshing).toBe(false);
+  });
 });

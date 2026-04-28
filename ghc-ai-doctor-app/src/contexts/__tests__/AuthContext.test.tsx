@@ -27,6 +27,7 @@ const mockSession = {
   sessionId: 'test-session',
   authenticated: true,
   user: mockUser,
+  currentProvider: null,
 };
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -118,7 +119,7 @@ describe('AuthContext', () => {
       expect(SecureStore.setItemAsync).toHaveBeenCalledWith('sessionToken', 'test-session');
       expect(SecureStore.setItemAsync).toHaveBeenCalledWith(
         'sessionUser',
-        JSON.stringify(mockUser)
+        JSON.stringify({ ...mockUser, providerUuid: null })
       );
     });
 

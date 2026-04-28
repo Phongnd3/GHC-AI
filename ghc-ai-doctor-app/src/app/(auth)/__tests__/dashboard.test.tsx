@@ -16,6 +16,7 @@ jest.mock('@/hooks/usePatients', () => ({
 const defaultPatientsResult = {
   patients: [],
   isLoading: false,
+  isRefreshing: false,
   error: undefined,
   mutate: jest.fn(),
   lastUpdatedAt: null,
@@ -477,5 +478,69 @@ describe('DashboardScreen - patient list', () => {
     const { queryByText } = render(<DashboardScreen />);
 
     expect(queryByText(/Last updated:/)).toBeNull();
+  });
+});
+
+describe('DashboardScreen - refresh', () => {
+  const mockMutate = jest.fn();
+  const samplePatient = {
+    patientUuid: 'patient-uuid-1',
+    displayName: 'John Doe',
+    patientId: 'MRN-001',
+    age: '44y',
+    gender: 'M',
+    ward: 'Ward A',
+    visitUuid: 'visit-uuid-1',
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockBackHandlerListeners = [];
+    (useAuth as jest.Mock).mockReturnValue({ logout: jest.fn(), providerUuid: 'doctor-uuid' });
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      patients: [samplePatient],
+      mutate: mockMutate,
+    });
+  });
+
+  it('shows refresh icon button in header', () => {
+    const { getByLabelText } = render(<DashboardScreen />);
+
+    expect(getByLabelText('Refresh')).toBeTruthy();
+  });
+
+  it('tapping refresh icon calls mutate', () => {
+    const { getByLabelText } = render(<DashboardScreen />);
+
+    fireEvent.press(getByLabelText('Refresh'));
+
+    expect(mockMutate).toHaveBeenCalledTimes(1);
+  });
+
+  it('FlatList renders with refreshControl prop when patients are loaded', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { FlatList } = require('react-native');
+    const { UNSAFE_getByType } = render(<DashboardScreen />);
+    const flatList = UNSAFE_getByType(FlatList);
+
+    expect(flatList.props.refreshControl).toBeTruthy();
+    expect(flatList.props.refreshControl.props.refreshing).toBe(false);
+    expect(flatList.props.refreshControl.props.onRefresh).toBe(mockMutate);
+  });
+
+  it('passes isRefreshing=true to RefreshControl when refreshing', () => {
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      patients: [samplePatient],
+      isRefreshing: true,
+      mutate: mockMutate,
+    });
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { FlatList } = require('react-native');
+    const { UNSAFE_getByType } = render(<DashboardScreen />);
+    const flatList = UNSAFE_getByType(FlatList);
+
+    expect(flatList.props.refreshControl.props.refreshing).toBe(true);
   });
 });
