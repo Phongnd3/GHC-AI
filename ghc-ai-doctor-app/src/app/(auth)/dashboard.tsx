@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { BackHandler, FlatList, View, StyleSheet } from 'react-native';
+import { BackHandler, FlatList, RefreshControl, View, StyleSheet } from 'react-native';
 import { Button, Dialog, Portal, Text, IconButton, useTheme } from 'react-native-paper';
 import { Stack, router, useFocusEffect } from 'expo-router';
 import { formatDistanceToNow } from 'date-fns';
@@ -15,7 +15,7 @@ import type { FilteredPatientData } from '@/types/patient';
 export default function DashboardScreen() {
   const theme = useTheme();
   const { logout, providerUuid } = useAuth();
-  const { patients, isLoading, error, mutate, lastUpdatedAt } = usePatients(providerUuid);
+  const { patients, isLoading, isRefreshing, error, mutate, lastUpdatedAt } = usePatients(providerUuid);
 
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -95,6 +95,12 @@ export default function DashboardScreen() {
           />
         )}
         contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={mutate}
+          />
+        }
       />
     );
   }
@@ -106,12 +112,20 @@ export default function DashboardScreen() {
           headerShown: true,
           title: 'My Patients',
           headerRight: () => (
-            <IconButton
-              icon="exit-to-app"
-              iconColor={theme.colors.onSurface}
-              onPress={handleLogoutPress}
-              accessibilityLabel="Logout"
-            />
+            <View style={styles.headerActions}>
+              <IconButton
+                icon="refresh"
+                iconColor={theme.colors.onSurface}
+                onPress={mutate}
+                accessibilityLabel="Refresh"
+              />
+              <IconButton
+                icon="exit-to-app"
+                iconColor={theme.colors.onSurface}
+                onPress={handleLogoutPress}
+                accessibilityLabel="Logout"
+              />
+            </View>
           ),
         }}
       />
@@ -168,5 +182,8 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: Spacing.md,
+  },
+  headerActions: {
+    flexDirection: 'row',
   },
 });

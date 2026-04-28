@@ -49,6 +49,7 @@ const SWR_KEY = '/visit?includeInactive=false&v=full';
 interface UsePatientsResult {
   patients: FilteredPatientData[];
   isLoading: boolean;
+  isRefreshing: boolean;
   error: unknown;
   mutate: () => void;
   lastUpdatedAt: Date | null;
@@ -90,10 +91,12 @@ export function usePatients(providerUuid: string | null): UsePatientsResult {
       : [];
 
   const isLoading = providerUuid !== null && !data && !error;
+  const isRefreshing = data !== undefined && isValidating;
 
   return {
     patients,
     isLoading,
+    isRefreshing,
     error,
     mutate,
     lastUpdatedAt,
