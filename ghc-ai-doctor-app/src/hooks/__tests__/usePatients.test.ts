@@ -175,6 +175,13 @@ describe('resolveDisplayName', () => {
     patient.person.names = [];
     expect(resolveDisplayName(patient)).toBe('Unknown Patient');
   });
+
+  it('returns "Unknown Patient" when person.names is undefined', () => {
+    const patient = makePatient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    patient.person.names = undefined as any;
+    expect(resolveDisplayName(patient)).toBe('Unknown Patient');
+  });
 });
 
 describe('resolvePatientId', () => {

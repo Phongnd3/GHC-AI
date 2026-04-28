@@ -23,6 +23,9 @@ export function isValidPatient(visit: Visit): boolean {
 // --- Data derivation helpers (exported for testability) ---
 
 export function resolveDisplayName(patient: Patient): string {
+  if (!patient.person?.names || patient.person.names.length === 0) {
+    return 'Unknown Patient';
+  }
   const preferred = patient.person.names.find((n) => n.preferred);
   const name = preferred ?? patient.person.names[0];
   if (!name) return 'Unknown Patient';
@@ -30,12 +33,15 @@ export function resolveDisplayName(patient: Patient): string {
 }
 
 export function resolvePatientId(patient: Patient): string {
+  if (!patient.identifiers || patient.identifiers.length === 0) {
+    return 'N/A';
+  }
   const preferred = patient.identifiers.find((i) => i.preferred);
   return preferred?.identifier ?? patient.identifiers[0]?.identifier ?? 'N/A';
 }
 
 export function resolveAge(person: Patient['person']): string {
-  if (!person.birthdate) return 'Unknown';
+  if (!person?.birthdate) return 'Unknown';
   const years = differenceInYears(new Date(), new Date(person.birthdate));
   return person.birthdateEstimated ? `~${years}y` : `${years}y`;
 }
