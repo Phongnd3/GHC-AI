@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: "2026-04-24T12:09:14+07:00"
-last_updated: "2026-04-28T20:26:21+07:00"
+last_updated: "2026-04-28T20:59:47+07:00"
 project: "GHC Mobile App - OpenMRS Patient Management"
 project_key: "NOKEY"
 tracking_system: "file-system"
@@ -68,6 +68,8 @@ development_status:
   3-4-navigate-to-patient-clinical-summary: done
   3-5-display-last-updated-timestamp: done
   3-6-handle-network-errors-on-dashboard: done
+  epic-4: in-progress
+  4-1-view-patient-demographics: done
 
 
 time_tracking:
@@ -151,4 +153,9 @@ time_tracking:
   2-7-session-persistence-across-app-restarts:
     started_at: "2026-04-26T20:00:00+07:00"
     completed_at: "2026-04-26T21:00:00+07:00"
+    duration_hours: 1.0
+
+  4-1-view-patient-demographics:
+    started_at: "2026-04-28T20:30:00+07:00"
+    completed_at: "2026-04-28T21:30:00+07:00"
     duration_hours: 1.0

@@ -30,6 +30,13 @@ export interface Patient {
   voided: boolean;
 }
 
+export interface PatientDemographics {
+  displayName: string;
+  patientId: string;
+  age: string;
+  gender: string;
+}
+
 export interface FilteredPatientData {
   patientUuid: string;
   displayName: string;
