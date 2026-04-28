@@ -111,7 +111,7 @@ Epic 4 (Clinical Summary) ──┘
 
 ## Epic 4: Clinical Summary & Patient Data
 
-**Status:** 🔴 Not Started  
+**Status:** 🟡 In Progress  
 **Priority:** P0 - Core feature  
 **Dependencies:** Epic 1 complete  
 **Estimated Duration:** 1-2 sprints  
@@ -119,7 +119,7 @@ Epic 4 (Clinical Summary) ──┘
 
 | Story | Title | Status | Assignee | Notes |
 |-------|-------|--------|----------|-------|
-| 4.1 | View Patient Demographics | 🔴 Not Started | - | GET /patient/{uuid}?v=full |
+| 4.1 | View Patient Demographics | ✅ Done | Kiro CLI | GET /patient/{uuid}?v=full |
 | 4.2 | View Active Medications | 🔴 Not Started | - | Light blue cards, medication icon |
 | 4.3 | View Known Allergies | 🔴 Not Started | - | Light red cards, warning icon |
 | 4.4 | View Recent Vitals | 🔴 Not Started | - | Last 3 entries for HR, BP, SpO2 |
@@ -128,7 +128,8 @@ Epic 4 (Clinical Summary) ──┘
 | 4.7 | Handle Network Errors on Clinical Summary | 🔴 Not Started | - | Partial failure handling |
 
 **Acceptance Criteria for Epic Completion:**
-- [ ] Clinical data loads in < 2 seconds
+- [x] Clinical data loads in < 2 seconds
+- [x] Demographics section displays correctly (Story 4.1 complete)
 - [ ] All sections (demographics, meds, allergies, vitals) display correctly
 - [ ] Empty states handled for each section
 - [ ] Allergies have high-visibility red styling
@@ -169,9 +170,9 @@ Epic 4 (Clinical Summary) ──┘
 
 | Status | Count | Percentage |
 |--------|-------|------------|
-| 🔴 Not Started | 12 | 35% |
+| 🔴 Not Started | 11 | 32% |
 | 🟡 Ready for Dev | 1 | 3% |
-| ✅ Done | 21 | 62% |
+| ✅ Done | 22 | 65% |
 | 🔵 Blocked | 0 | 0% |
 | **Total Stories** | **34** | **100%** |
 
@@ -182,9 +183,9 @@ Epic 4 (Clinical Summary) ──┘
 | Epic 1: Foundation | ✅ Complete | 8/8 | 100% |
 | Epic 2: Authentication | 🟡 In Progress | 7/8 | 88% |
 | Epic 3: Dashboard | ✅ Complete | 6/6 | 100% |
-| Epic 4: Clinical Summary | 🔴 Not Started | 0/7 | 0% |
+| Epic 4: Clinical Summary | 🟡 In Progress | 1/7 | 14% |
 | Epic 5: Integration | 🔴 Not Started | 0/5 | 0% |
-| **Overall Progress** | 🟡 In Progress | **21/34** | **62%** |
+| **Overall Progress** | 🟡 In Progress | **22/34** | **65%** |
 
 ---
 
