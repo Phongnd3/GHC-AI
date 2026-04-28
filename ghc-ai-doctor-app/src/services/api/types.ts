@@ -1,6 +1,6 @@
 export interface SessionResponse {
   authenticated: boolean;
-  sessionId: string; // Extracted from JSESSIONID Set-Cookie header
+  sessionId: string; // From response.data.sessionId (OpenMRS REST API response body)
   user: {
     uuid: string;
     display: string;

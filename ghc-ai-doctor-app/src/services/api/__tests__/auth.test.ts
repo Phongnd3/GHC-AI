@@ -19,17 +19,14 @@ const mockUserData = {
   },
 };
 
-function makeLoginResponse(
-  overrides: Partial<{ authenticated: boolean; setCookie: string | string[] }> = {}
-) {
+function makeLoginResponse(overrides: Partial<{ authenticated: boolean; sessionId: string }> = {}) {
   return {
     data: {
       authenticated: overrides.authenticated ?? true,
+      sessionId: overrides.sessionId ?? 'test-session-id',
       user: mockUserData,
     },
-    headers: {
-      'set-cookie': overrides.setCookie ?? 'JSESSIONID=test-session-id; Path=/openmrs; HttpOnly',
-    },
+    headers: {},
   };
 }
 
@@ -69,24 +66,24 @@ describe('auth service', () => {
       expect(decoded).toBe('testuser:password');
     });
 
-    it('should extract sessionId from Set-Cookie header (string)', async () => {
-      (apiClient.post as jest.Mock).mockResolvedValue(makeLoginResponse());
-
-      const result = await login('testuser', 'password');
-
-      expect(result.sessionId).toBe('test-session-id');
-    });
-
-    it('should extract sessionId from Set-Cookie header (array)', async () => {
+    it('should read sessionId from response body', async () => {
       (apiClient.post as jest.Mock).mockResolvedValue(
-        makeLoginResponse({
-          setCookie: ['JSESSIONID=array-session-id; Path=/openmrs; HttpOnly', 'other=value'],
-        })
+        makeLoginResponse({ sessionId: 'body-session-id' })
       );
 
       const result = await login('testuser', 'password');
 
-      expect(result.sessionId).toBe('array-session-id');
+      expect(result.sessionId).toBe('body-session-id');
+    });
+
+    it('should NOT call DELETE /session before login (no pre-login cleanup)', async () => {
+      (apiClient.post as jest.Mock).mockResolvedValue(makeLoginResponse());
+
+      await login('testuser', 'password');
+
+      // The pre-login DELETE was removed — only one network call should be made
+      expect(apiClient.delete).not.toHaveBeenCalled();
+      expect(apiClient.post).toHaveBeenCalledTimes(1);
     });
 
     it('should return a typed SessionResponse', async () => {
@@ -95,6 +92,7 @@ describe('auth service', () => {
       const result = await login('testuser', 'password');
 
       expect(result.authenticated).toBe(true);
+      expect(result.sessionId).toBe('test-session-id');
       expect(result.user.uuid).toBe('user-uuid');
       expect(result.user.display).toBe('Test User');
       expect(result.user.username).toBe('testuser');
@@ -123,7 +121,7 @@ describe('auth service', () => {
       expect(thrownError?.code).toBe('AUTH_CREDENTIALS_INVALID');
     });
 
-    it('should throw when no JSESSIONID cookie is returned', async () => {
+    it('should throw when sessionId is missing from response body', async () => {
       (apiClient.post as jest.Mock).mockResolvedValue({
         data: { authenticated: true, user: mockUserData },
         headers: {},
