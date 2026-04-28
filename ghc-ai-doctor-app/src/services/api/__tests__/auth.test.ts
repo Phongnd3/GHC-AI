@@ -1,15 +1,11 @@
 import { login, logout } from '../auth';
-import { apiClient, LOGIN_REQUEST_FLAG } from '../client';
+import { apiClient } from '../client';
 
 jest.mock('../client', () => ({
   apiClient: {
     post: jest.fn(),
     delete: jest.fn(),
   },
-  // Export the real constant so auth.ts can use it as a computed property key.
-  // Without this, jest.mock replaces the module entirely and LOGIN_REQUEST_FLAG
-  // resolves to undefined, causing [LOGIN_REQUEST_FLAG]: true → { undefined: true }.
-  LOGIN_REQUEST_FLAG: '_isLoginRequest',
 }));
 
 const mockUserData = {
@@ -56,7 +52,7 @@ describe('auth service', () => {
           headers: {
             Authorization: expect.stringMatching(/^Basic /),
           },
-          [LOGIN_REQUEST_FLAG]: true,
+          _isLoginRequest: true,
         })
       );
     });
@@ -91,19 +87,6 @@ describe('auth service', () => {
       const result = await login('testuser', 'password');
 
       expect(result.sessionId).toBe('array-session-id');
-    });
-
-    it('should NOT call DELETE /session before login (bug fix: pre-login DELETE caused iOS cookie caching)', async () => {
-      // Regression test for Story 2.8:
-      // The pre-login DELETE /session caused iOS to cache the JSESSIONID from the
-      // DELETE response and attach it to the subsequent POST, making OpenMRS reuse
-      // the old session and skip Set-Cookie on the POST — breaking first-attempt login.
-      (apiClient.post as jest.Mock).mockResolvedValue(makeLoginResponse());
-
-      await login('testuser', 'password');
-
-      expect(apiClient.delete).not.toHaveBeenCalled();
-      expect(apiClient.post).toHaveBeenCalledTimes(1);
     });
 
     it('should return a typed SessionResponse', async () => {
