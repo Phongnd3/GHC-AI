@@ -27,7 +27,7 @@ Epic 4 (Clinical Summary) ──┘
 
 ## Epic 1: Project Foundation & Core Infrastructure
 
-**Status:** 🔴 Not Started  
+**Status:** ✅ Complete  
 **Priority:** P0 - Blocking all other work  
 **Dependencies:** None  
 **Estimated Duration:** 1-2 sprints
@@ -81,7 +81,7 @@ Epic 4 (Clinical Summary) ──┘
 
 ## Epic 3: My Patients Dashboard
 
-**Status:** 🔴 Not Started  
+**Status:** 🟡 In Progress  
 **Priority:** P0 - Core feature  
 **Dependencies:** Epic 1 complete  
 **Estimated Duration:** 1 sprint  
@@ -90,19 +90,19 @@ Epic 4 (Clinical Summary) ──┘
 
 | Story | Title | Status | Assignee | Notes |
 |-------|-------|--------|----------|-------|
-| 3.1 | View List of Assigned Patients | 🔴 Not Started | - | Filter by visit creator (CC-001) |
-| 3.2 | Refresh Patient List | 🔴 Not Started | - | Pull-to-refresh |
-| 3.3 | Handle Empty Patient List | 🔴 Not Started | - | EmptyState component |
-| 3.4 | Navigate to Patient Clinical Summary | 🔴 Not Started | - | Expo Router navigation |
-| 3.5 | Display Last Updated Timestamp | 🔴 Not Started | - | date-fns formatting |
+| 3.1 | View List of Assigned Patients | ✅ Done | - | Filter by visit creator (CC-001) |
+| 3.2 | Refresh Patient List | ✅ Done | - | Pull-to-refresh |
+| 3.3 | Handle Empty Patient List | ✅ Done | - | EmptyState component |
+| 3.4 | Navigate to Patient Clinical Summary | ✅ Done | - | Expo Router navigation |
+| 3.5 | Display Last Updated Timestamp | ✅ Done | - | date-fns formatting |
 | 3.6 | Handle Network Errors on Dashboard | 🔴 Not Started | - | Retry mechanism |
 
 **Acceptance Criteria for Epic Completion:**
-- [ ] Patient list loads in < 2 seconds
-- [ ] Only patients with active visits created by logged-in user shown (CC-001)
-- [ ] Pull-to-refresh works correctly
-- [ ] Empty states display helpful messages
-- [ ] Navigation to clinical summary works
+- [x] Patient list loads in < 2 seconds
+- [x] Only patients with active visits created by logged-in user shown (CC-001)
+- [x] Pull-to-refresh works correctly
+- [x] Empty states display helpful messages
+- [x] Navigation to clinical summary works
 - [ ] Network errors handled gracefully
 
 ---
@@ -167,9 +167,9 @@ Epic 4 (Clinical Summary) ──┘
 
 | Status | Count | Percentage |
 |--------|-------|------------|
-| 🔴 Not Started | 27 | 82% |
+| 🔴 Not Started | 22 | 67% |
 | 🟡 In Progress | 0 | 0% |
-| 🟢 Complete | 6 | 18% |
+| 🟢 Complete | 11 | 33% |
 | 🔵 Blocked | 0 | 0% |
 | **Total Stories** | **33** | **100%** |
 
@@ -177,12 +177,12 @@ Epic 4 (Clinical Summary) ──┘
 
 | Epic | Status | Stories Complete | Progress |
 |------|--------|------------------|----------|
-| Epic 1: Foundation | 🟡 In Progress | 6/8 | 75% |
+| Epic 1: Foundation | 🟢 Complete | 8/8 | 100% |
 | Epic 2: Authentication | 🔴 Not Started | 0/7 | 0% |
-| Epic 3: Dashboard | 🔴 Not Started | 0/6 | 0% |
+| Epic 3: Dashboard | 🟡 In Progress | 5/6 | 83% |
 | Epic 4: Clinical Summary | 🔴 Not Started | 0/7 | 0% |
 | Epic 5: Integration | 🔴 Not Started | 0/5 | 0% |
-| **Overall Progress** | 🟡 In Progress | **6/33** | **18%** |
+| **Overall Progress** | 🟡 In Progress | **11/33** | **33%** |
 
 ---
 
