@@ -7,7 +7,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePatients } from '@/hooks/usePatients';
 import { PatientCard } from '@/components/PatientCard';
 import { EmptyState } from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { mapErrorToUserMessage, ErrorType } from '@/utils/errorHandler';
 import { Spacing } from '@/theme/spacing';
 import { BaseColors } from '@/theme/colors';
 import type { FilteredPatientData } from '@/types/patient';
@@ -69,14 +71,13 @@ export default function DashboardScreen() {
       return <LoadingSkeleton count={3} />;
     }
     if (error) {
-      return (
-        <EmptyState
-          icon="wifi-off"
-          message="Unable to load patients. Tap to retry."
-          actionLabel="Retry"
-          onActionPress={mutate}
-        />
-      );
+      const mapped = mapErrorToUserMessage(error);
+      const errorMessage =
+        mapped.type === ErrorType.NETWORK_ERROR
+          ? 'Unable to load patients. Tap to retry.'
+          : 'Unable to load patients. Please try again later.';
+
+      return <ErrorState message={errorMessage} onRetry={mutate} isRetrying={isRefreshing} />;
     }
     if (patients.length === 0) {
       return <EmptyState icon="account-group" message="No active patients assigned to you" />;

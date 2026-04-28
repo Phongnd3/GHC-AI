@@ -449,9 +449,10 @@ describe('DashboardScreen - patient list', () => {
 
   it('shows error state with retry when fetch fails', () => {
     const mockMutate = jest.fn();
+    const networkError = { request: {}, message: 'Network Error' };
     (usePatients as jest.Mock).mockReturnValue({
       ...defaultPatientsResult,
-      error: new Error('Network Error'),
+      error: networkError,
       mutate: mockMutate,
     });
 
@@ -463,9 +464,10 @@ describe('DashboardScreen - patient list', () => {
 
   it('calls mutate when retry button is pressed', () => {
     const mockMutate = jest.fn();
+    const networkError = { request: {}, message: 'Network Error' };
     (usePatients as jest.Mock).mockReturnValue({
       ...defaultPatientsResult,
-      error: new Error('Network Error'),
+      error: networkError,
       mutate: mockMutate,
     });
 
@@ -581,5 +583,130 @@ describe('DashboardScreen - refresh', () => {
     const flatList = UNSAFE_getByType(FlatList);
 
     expect(flatList.props.refreshControl.props.refreshing).toBe(true);
+  });
+});
+
+describe('DashboardScreen - error handling', () => {
+  const mockMutate = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockBackHandlerListeners = [];
+    (useAuth as jest.Mock).mockReturnValue({ logout: jest.fn(), user: { uuid: 'doctor-uuid' } });
+  });
+
+  it('shows network error message for network errors', () => {
+    const networkError = { request: {}, message: 'Network Error' };
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      error: networkError,
+      mutate: mockMutate,
+    });
+
+    const { getByText } = render(<DashboardScreen />);
+
+    expect(getByText('Unable to load patients. Tap to retry.')).toBeTruthy();
+    expect(getByText('Retry')).toBeTruthy();
+  });
+
+  it('shows generic error message for server errors', () => {
+    const serverError = { response: { status: 500 }, message: 'Server Error' };
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      error: serverError,
+      mutate: mockMutate,
+    });
+
+    const { getByText } = render(<DashboardScreen />);
+
+    expect(getByText('Unable to load patients. Please try again later.')).toBeTruthy();
+    expect(getByText('Retry')).toBeTruthy();
+  });
+
+  it('calls mutate when retry button is tapped', () => {
+    const networkError = { request: {}, message: 'Network Error' };
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      error: networkError,
+      mutate: mockMutate,
+    });
+
+    const { getByText } = render(<DashboardScreen />);
+    fireEvent.press(getByText('Retry'));
+
+    expect(mockMutate).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows loading state on retry button when retrying', () => {
+    const networkError = { request: {}, message: 'Network Error' };
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      error: networkError,
+      isRefreshing: true,
+      mutate: mockMutate,
+    });
+
+    const { getByText } = render(<DashboardScreen />);
+    const retryButton = getByText('Retry');
+
+    expect(retryButton).toBeDisabled();
+  });
+
+  it('hides error state when retry succeeds', () => {
+    const networkError = { request: {}, message: 'Network Error' };
+    const { rerender, queryByText } = render(<DashboardScreen />);
+
+    // Initial error state
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      error: networkError,
+      mutate: mockMutate,
+    });
+    rerender(<DashboardScreen />);
+    expect(queryByText('Unable to load patients. Tap to retry.')).toBeTruthy();
+
+    // After successful retry
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      patients: [
+        {
+          patientUuid: 'patient-uuid-1',
+          displayName: 'John Doe',
+          patientId: 'MRN-001',
+          age: '44y',
+          gender: 'M',
+          ward: 'Ward A',
+          visitUuid: 'visit-uuid-1',
+        },
+      ],
+      mutate: mockMutate,
+    });
+    rerender(<DashboardScreen />);
+
+    expect(queryByText('Unable to load patients. Tap to retry.')).toBeNull();
+    expect(queryByText('John Doe')).toBeTruthy();
+  });
+
+  it('shows error state again if retry fails', () => {
+    const networkError = { request: {}, message: 'Network Error' };
+    const { rerender, getByText } = render(<DashboardScreen />);
+
+    // Initial error state
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      error: networkError,
+      mutate: mockMutate,
+    });
+    rerender(<DashboardScreen />);
+
+    // Retry still fails
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      error: networkError,
+      mutate: mockMutate,
+    });
+    rerender(<DashboardScreen />);
+
+    expect(getByText('Unable to load patients. Tap to retry.')).toBeTruthy();
   });
 });
