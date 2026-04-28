@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { apiClient } from '../api/client';
+import { apiClient, LOGIN_REQUEST_FLAG } from '../api/client';
 
 jest.mock('expo-secure-store', () => ({
   getItemAsync: jest.fn(),
@@ -57,7 +57,7 @@ describe('apiClient', () => {
     (SecureStore.getItemAsync as jest.Mock).mockResolvedValue('stale-token');
     const config = await apiClient.interceptors.request.handlers![0].fulfilled({
       headers: new axios.AxiosHeaders(),
-      _isLoginRequest: true,
+      [LOGIN_REQUEST_FLAG]: true,
     } as any);
     expect(SecureStore.getItemAsync).not.toHaveBeenCalled();
     expect(config.headers.get('Cookie')).toBeUndefined();

@@ -1,6 +1,6 @@
 # Story 2.8: [BUG] Login Fails on First Attempt with "An error occurred"
 
-**Status:** review  
+**Status:** done  
 **Epic:** 2 - Authentication & Session Management  
 **Story ID:** 2.8  
 **Type:** Bug  
@@ -70,6 +70,13 @@ So that I can access my patients without confusion or repeated login attempts.
 - [x] Task 3: Add regression test (AC: #1)
   - [x] Add unit/integration test that simulates first-attempt login and asserts success
   - [x] Test covers: fresh mount → login call → success (no prior state)
+
+### Review Findings
+
+- [x] [Review][Patch] `_isLoginRequest` string is duplicated across `auth.ts` and `client.ts` with no shared constant — a typo in either location silently breaks the guard [`auth.ts` line ~44, `client.ts` line ~18]
+- [x] [Review][Defer] `logout()` DELETE is not guarded with `_isLoginRequest` — asymmetry with the comment, but correct behavior (logout should send the session cookie to invalidate server-side) [`client.ts`] — deferred, intentional asymmetry
+- [x] [Review][Defer] iOS native cookie jar (`NSURLSession`) is not cleared — if a prior `JSESSIONID` is in the native cookie store, iOS may still attach it to the login POST below the Axios layer; fix is necessary but may not be sufficient on all iOS configurations [`auth.ts`] — deferred, requires native cookie clearing module out of scope for this fix
+- [x] [Review][Defer] No test for `_isLoginRequest: false` (explicit false vs absent) — `=== true` guard is correct and the true case is tested; explicit-false case is a minor gap [`client.test.ts`] — deferred, low risk
 
 ---
 

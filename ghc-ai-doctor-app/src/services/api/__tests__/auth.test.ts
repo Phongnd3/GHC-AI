@@ -1,11 +1,15 @@
 import { login, logout } from '../auth';
-import { apiClient } from '../client';
+import { apiClient, LOGIN_REQUEST_FLAG } from '../client';
 
 jest.mock('../client', () => ({
   apiClient: {
     post: jest.fn(),
     delete: jest.fn(),
   },
+  // Export the real constant so auth.ts can use it as a computed property key.
+  // Without this, jest.mock replaces the module entirely and LOGIN_REQUEST_FLAG
+  // resolves to undefined, causing [LOGIN_REQUEST_FLAG]: true → { undefined: true }.
+  LOGIN_REQUEST_FLAG: '_isLoginRequest',
 }));
 
 const mockUserData = {
@@ -52,7 +56,7 @@ describe('auth service', () => {
           headers: {
             Authorization: expect.stringMatching(/^Basic /),
           },
-          _isLoginRequest: true,
+          [LOGIN_REQUEST_FLAG]: true,
         })
       );
     });

@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient, LOGIN_REQUEST_FLAG, type LoginRequestConfig } from './client';
 import { APP_ENV, REQUEST_TIMEOUT } from '@/config/env';
 import type { SessionResponse } from './types';
 
@@ -36,7 +36,7 @@ export async function login(username: string, password: string): Promise<Session
   // existing session and skips the Set-Cookie header on the POST response, causing
   // JSESSIONID extraction to fail on the first login attempt.
   // The request interceptor in client.ts already skips attaching stored cookies
-  // for _isLoginRequest calls, which is sufficient to get a fresh session.
+  // for LOGIN_REQUEST_FLAG requests, which is sufficient to get a fresh session.
 
   const response = await apiClient.post('/session', {}, {
     timeout: LOGIN_TIMEOUT,
@@ -45,8 +45,8 @@ export async function login(username: string, password: string): Promise<Session
     },
     // Flag this request so the 401 interceptor knows not to redirect —
     // on the login screen a 401 means wrong credentials, not session expiry.
-    _isLoginRequest: true,
-  } as Parameters<typeof apiClient.post>[2] & { _isLoginRequest: boolean });
+    [LOGIN_REQUEST_FLAG]: true,
+  } as Parameters<typeof apiClient.post>[2] & LoginRequestConfig);
 
   // OpenMRS returns 200 with authenticated: false for bad credentials — not a 4xx.
   // Throw with a typed code so mapErrorToUserMessage can classify this as AUTH_ERROR.
