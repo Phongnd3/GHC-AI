@@ -18,6 +18,21 @@ jest.mock('expo-router', () => ({
   Link: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+jest.mock('expo-constants', () => ({
+  __esModule: true,
+  default: {
+    expoConfig: {
+      extra: {
+        apiBaseUrl: 'http://localhost:8080/openmrs/ws/rest/v1',
+        sessionTimeout: 1800000,
+        cacheDuration: 300000,
+        requestTimeout: 10000,
+        appEnv: 'development',
+      },
+    },
+  },
+}));
+
 // Additional mocks will be added as packages are installed in future stories:
 // - expo-secure-store (Story 2.1)
 // - @expo/vector-icons (Story 1.7)

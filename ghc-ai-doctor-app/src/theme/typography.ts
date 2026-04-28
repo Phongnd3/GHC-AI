@@ -1,13 +1,15 @@
+import type { TextStyle } from 'react-native';
+
 export const FontFamily = {
   regular: 'IBMPlexSans-Regular',
   semiBold: 'IBMPlexSans-SemiBold',
 } as const;
 
 export type TypographyStyle = {
-  fontSize: number;
-  lineHeight: number;
-  fontWeight: string;
-  fontFamily: string;
+  fontSize: TextStyle['fontSize'];
+  lineHeight: TextStyle['lineHeight'];
+  fontWeight: TextStyle['fontWeight'];
+  fontFamily: TextStyle['fontFamily'];
 };
 
 export const Typography: Record<string, TypographyStyle> = {

@@ -23,6 +23,8 @@ module.exports = {
     '@typescript-eslint/no-explicit-any': 'warn',
     '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
     'react-native/no-color-literals': 'off',
+    // Allow bare string children inside Paper's Button (it expects a string, not a <Text> node)
+    'react-native/no-raw-text': ['warn', { skip: ['Button'] }],
   },
   settings: {
     react: {

@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: "2026-04-24T12:09:14+07:00"
-last_updated: "2026-04-24T12:49:47+07:00"
+last_updated: "2026-04-26T21:00:00+07:00"
 project: "GHC Mobile App - OpenMRS Patient Management"
 project_key: "NOKEY"
 tracking_system: "file-system"
@@ -52,7 +52,15 @@ development_status:
   1-7-create-base-ui-components: done
   1-8-configure-environment-variables: done
   epic-1-retrospective: optional
- 
+  epic-2: in-progress
+  2-1-doctor-login-openmrs-credentials: done
+  2-2-handle-invalid-login-credentials: done
+  2-3-handle-network-errors-during-login: done
+  2-4-automatic-session-timeout: done
+  2-5-prevent-screenshots-clinical-screens: done
+  2-6-doctor-logout-with-confirmation: done
+  2-7-session-persistence-across-app-restarts: done
+
 
 time_tracking:
   # Populated automatically by dev-story workflow
@@ -102,3 +110,37 @@ time_tracking:
     completed_at: "2026-04-24T17:00:00+07:00"
     duration_hours: 0.8
   
+  2-1-doctor-login-openmrs-credentials:
+    started_at: "2026-04-25T09:00:00+07:00"
+    completed_at: "2026-04-25T14:00:00+07:00"
+    duration_hours: 5.0
+  
+  2-2-handle-invalid-login-credentials:
+    started_at: "2026-04-26T09:00:00+07:00"
+    completed_at: "2026-04-26T10:30:00+07:00"
+    duration_hours: 1.5
+  
+  2-3-handle-network-errors-during-login:
+    started_at: "2026-04-26T10:45:00+07:00"
+    completed_at: "2026-04-26T12:15:00+07:00"
+    duration_hours: 1.5
+  
+  2-4-automatic-session-timeout:
+    started_at: "2026-04-26T13:00:00+07:00"
+    completed_at: "2026-04-26T16:30:00+07:00"
+    duration_hours: 3.5
+  
+  2-5-prevent-screenshots-clinical-screens:
+    started_at: "2026-04-26T16:45:00+07:00"
+    completed_at: "2026-04-26T17:30:00+07:00"
+    duration_hours: 0.8
+  
+  2-6-doctor-logout-with-confirmation:
+    started_at: "2026-04-26T18:00:00+07:00"
+    completed_at: "2026-04-26T20:00:00+07:00"
+    duration_hours: 2.0
+  
+  2-7-session-persistence-across-app-restarts:
+    started_at: "2026-04-26T20:00:00+07:00"
+    completed_at: "2026-04-26T21:00:00+07:00"
+    duration_hours: 1.0
