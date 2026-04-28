@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import useSWR from 'swr';
 import { differenceInYears } from 'date-fns';
 import { getActiveVisits } from '@/services/api/patients';
@@ -12,10 +12,8 @@ export function isActiveVisit(visit: Visit): boolean {
   return visit.stopDatetime === null;
 }
 
-export function isDoctorPrimaryProvider(visit: Visit, providerUuid: string): boolean {
-  return visit.encounters.some(enc =>
-    enc.encounterProviders.some(ep => ep.provider.uuid === providerUuid)
-  );
+export function isCreatedByUser(visit: Visit, userUuid: string): boolean {
+  return visit.auditInfo?.creator?.uuid === userUuid;
 }
 
 export function isValidPatient(visit: Visit): boolean {
@@ -25,14 +23,14 @@ export function isValidPatient(visit: Visit): boolean {
 // --- Data derivation helpers (exported for testability) ---
 
 export function resolveDisplayName(patient: Patient): string {
-  const preferred = patient.person.names.find(n => n.preferred);
+  const preferred = patient.person.names.find((n) => n.preferred);
   const name = preferred ?? patient.person.names[0];
   if (!name) return 'Unknown Patient';
   return [name.givenName, name.familyName].filter(Boolean).join(' ');
 }
 
 export function resolvePatientId(patient: Patient): string {
-  const preferred = patient.identifiers.find(i => i.preferred);
+  const preferred = patient.identifiers.find((i) => i.preferred);
   return preferred?.identifier ?? patient.identifiers[0]?.identifier ?? 'N/A';
 }
 
@@ -55,31 +53,31 @@ interface UsePatientsResult {
   lastUpdatedAt: Date | null;
 }
 
-export function usePatients(providerUuid: string | null): UsePatientsResult {
+export function usePatients(userUuid: string | null): UsePatientsResult {
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
+  const wasValidating = useRef(false);
 
   const { data, error, isValidating, mutate } = useSWR(
-    providerUuid ? SWR_KEY : null,
+    userUuid ? SWR_KEY : null,
     () => getActiveVisits(),
     { dedupingInterval: 300000, revalidateOnFocus: true }
   );
 
   useEffect(() => {
-    if (data && !isValidating) {
+    if (wasValidating.current && !isValidating && data) {
       setLastUpdatedAt(new Date());
     }
+    wasValidating.current = isValidating;
   }, [data, isValidating]);
 
   const patients: FilteredPatientData[] =
-    data && providerUuid
+    data && Array.isArray(data) && userUuid
       ? data
           .filter(
-            visit =>
-              isActiveVisit(visit) &&
-              isDoctorPrimaryProvider(visit, providerUuid) &&
-              isValidPatient(visit)
+            (visit) =>
+              isActiveVisit(visit) && isCreatedByUser(visit, userUuid) && isValidPatient(visit)
           )
-          .map(visit => ({
+          .map((visit) => ({
             patientUuid: visit.patient.uuid,
             displayName: resolveDisplayName(visit.patient),
             patientId: resolvePatientId(visit.patient),
@@ -90,7 +88,7 @@ export function usePatients(providerUuid: string | null): UsePatientsResult {
           }))
       : [];
 
-  const isLoading = providerUuid !== null && !data && !error;
+  const isLoading = userUuid !== null && !data && !error;
   const isRefreshing = data !== undefined && isValidating;
 
   return {

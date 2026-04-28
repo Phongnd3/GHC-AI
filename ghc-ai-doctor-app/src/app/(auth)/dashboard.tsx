@@ -14,8 +14,10 @@ import type { FilteredPatientData } from '@/types/patient';
 
 export default function DashboardScreen() {
   const theme = useTheme();
-  const { logout, providerUuid } = useAuth();
-  const { patients, isLoading, isRefreshing, error, mutate, lastUpdatedAt } = usePatients(providerUuid);
+  const { logout, user } = useAuth();
+  const { patients, isLoading, isRefreshing, error, mutate, lastUpdatedAt } = usePatients(
+    user?.uuid ?? null
+  );
 
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -77,30 +79,17 @@ export default function DashboardScreen() {
       );
     }
     if (patients.length === 0) {
-      return (
-        <EmptyState
-          icon="account-group"
-          message="No active patients assigned to you"
-        />
-      );
+      return <EmptyState icon="account-group" message="No active patients assigned to you" />;
     }
     return (
       <FlatList
         data={patients}
         keyExtractor={(item: FilteredPatientData) => item.visitUuid}
         renderItem={({ item }: { item: FilteredPatientData }) => (
-          <PatientCard
-            patient={item}
-            onPress={() => router.push(`/patient/${item.patientUuid}`)}
-          />
+          <PatientCard patient={item} onPress={() => router.push(`/patient/${item.patientUuid}`)} />
         )}
         contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={mutate}
-          />
-        }
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={mutate} />}
       />
     );
   }
@@ -174,16 +163,16 @@ const styles = StyleSheet.create({
     color: 'red',
     marginTop: Spacing.sm,
   },
+  headerActions: {
+    flexDirection: 'row',
+  },
   lastUpdated: {
     color: BaseColors.textSecondary,
+    paddingBottom: Spacing.sm,
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
   },
   listContent: {
     padding: Spacing.md,
-  },
-  headerActions: {
-    flexDirection: 'row',
   },
 });

@@ -47,4 +47,10 @@ export interface Visit {
   encounters: Encounter[];
   attributes: Array<{ attributeType: { display: string }; value: string }>;
   voided: boolean;
+  auditInfo?: {
+    creator: { uuid: string; display: string };
+    dateCreated: string;
+    changedBy?: { uuid: string; display: string };
+    dateChanged?: string;
+  };
 }

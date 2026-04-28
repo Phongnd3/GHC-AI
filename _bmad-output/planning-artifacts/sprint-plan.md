@@ -85,11 +85,12 @@ Epic 4 (Clinical Summary) ──┘
 **Priority:** P0 - Core feature  
 **Dependencies:** Epic 1 complete  
 **Estimated Duration:** 1 sprint  
-**Can work in parallel with:** Epic 2, Epic 4
+**Can work in parallel with:** Epic 2, Epic 4  
+**Course Corrections:** CC-001 (Patient filtering strategy changed to visit creator matching)
 
 | Story | Title | Status | Assignee | Notes |
 |-------|-------|--------|----------|-------|
-| 3.1 | View List of Assigned Patients | 🔴 Not Started | - | GET /visit, SWR 5-min cache |
+| 3.1 | View List of Assigned Patients | 🔴 Not Started | - | Filter by visit creator (CC-001) |
 | 3.2 | Refresh Patient List | 🔴 Not Started | - | Pull-to-refresh |
 | 3.3 | Handle Empty Patient List | 🔴 Not Started | - | EmptyState component |
 | 3.4 | Navigate to Patient Clinical Summary | 🔴 Not Started | - | Expo Router navigation |
@@ -98,7 +99,7 @@ Epic 4 (Clinical Summary) ──┘
 
 **Acceptance Criteria for Epic Completion:**
 - [ ] Patient list loads in < 2 seconds
-- [ ] Only assigned patients with active visits shown
+- [ ] Only patients with active visits created by logged-in user shown (CC-001)
 - [ ] Pull-to-refresh works correctly
 - [ ] Empty states display helpful messages
 - [ ] Navigation to clinical summary works
@@ -249,6 +250,16 @@ Epic 4 (Clinical Summary) ──┘
 | Parallel team coordination (Sprint 2) | Medium | Daily standups, clear interface contracts | 🟡 Monitor |
 | Performance targets on low-end devices | Medium | Test on target hardware early in Sprint 2 | 🟡 Monitor |
 | SecureStore compatibility issues | Low | Test on multiple Android versions early | 🟢 Low Risk |
+
+---
+
+## Course Corrections
+
+| ID | Date | Epic | Description | Status |
+|----|------|------|-------------|--------|
+| CC-001 | 2026-04-28 | Epic 3 | Changed patient filtering from encounterProviders to visit creator matching | ✅ Approved |
+
+**Details:** See `_bmad-output/planning-artifacts/course-corrections/cc-001-patient-filtering-strategy.md`
 
 ---
 

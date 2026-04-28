@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react-native';
 import {
   isActiveVisit,
-  isDoctorPrimaryProvider,
+  isCreatedByUser,
   isValidPatient,
   resolveDisplayName,
   resolvePatientId,
@@ -17,7 +17,6 @@ import useSWR from 'swr';
 
 // Mock the patients service
 jest.mock('@/services/api/patients');
-import { getActiveVisits } from '@/services/api/patients';
 
 // --- Test data ---
 
@@ -59,7 +58,10 @@ function makeVisit(overrides: Partial<Visit> = {}): Visit {
         encounterProviders: [
           {
             uuid: 'ep-uuid-1',
-            provider: { uuid: 'doctor-uuid', person: { uuid: 'person-uuid', display: 'Dr. Smith' } },
+            provider: {
+              uuid: 'doctor-uuid',
+              person: { uuid: 'person-uuid', display: 'Dr. Smith' },
+            },
             encounterRole: { uuid: 'role-uuid', display: 'Attending' },
           },
         ],
@@ -70,6 +72,10 @@ function makeVisit(overrides: Partial<Visit> = {}): Visit {
     ],
     attributes: [],
     voided: false,
+    auditInfo: {
+      creator: { uuid: 'user-uuid', display: 'Dr. Smith' },
+      dateCreated: '2024-01-01T08:00:00',
+    },
     ...overrides,
   };
 }
@@ -86,17 +92,24 @@ describe('isActiveVisit', () => {
   });
 });
 
-describe('isDoctorPrimaryProvider', () => {
-  it('returns true when providerUuid matches an encounter provider', () => {
-    expect(isDoctorPrimaryProvider(makeVisit(), 'doctor-uuid')).toBe(true);
+describe('isCreatedByUser', () => {
+  it('returns true when userUuid matches visit creator', () => {
+    expect(isCreatedByUser(makeVisit(), 'user-uuid')).toBe(true);
   });
 
-  it('returns false when providerUuid does not match any encounter provider', () => {
-    expect(isDoctorPrimaryProvider(makeVisit(), 'other-doctor-uuid')).toBe(false);
+  it('returns false when userUuid does not match visit creator', () => {
+    expect(isCreatedByUser(makeVisit(), 'other-user-uuid')).toBe(false);
   });
 
-  it('returns false when visit has no encounters', () => {
-    expect(isDoctorPrimaryProvider(makeVisit({ encounters: [] }), 'doctor-uuid')).toBe(false);
+  it('returns false when visit has no auditInfo', () => {
+    expect(isCreatedByUser(makeVisit({ auditInfo: undefined }), 'user-uuid')).toBe(false);
+  });
+
+  it('returns false when auditInfo has no creator', () => {
+    const visit = makeVisit();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    visit.auditInfo = { creator: undefined as any, dateCreated: '2024-01-01' };
+    expect(isCreatedByUser(visit, 'user-uuid')).toBe(false);
   });
 });
 
@@ -218,14 +231,14 @@ describe('usePatients', () => {
       mutate: mockMutate,
     });
 
-    const { result } = renderHook(() => usePatients('doctor-uuid'));
+    const { result } = renderHook(() => usePatients('user-uuid'));
 
     expect(result.current.patients).toHaveLength(0);
     expect(result.current.isLoading).toBe(true);
     expect(result.current.error).toBeUndefined();
   });
 
-  it('passes null SWR key when providerUuid is null', () => {
+  it('passes null SWR key when userUuid is null', () => {
     (useSWR as jest.Mock).mockReturnValue({
       data: undefined,
       error: undefined,
@@ -239,7 +252,7 @@ describe('usePatients', () => {
     expect(key).toBeNull();
   });
 
-  it('returns isLoading=false when providerUuid is null (SWR disabled)', () => {
+  it('returns isLoading=false when userUuid is null (SWR disabled)', () => {
     (useSWR as jest.Mock).mockReturnValue({
       data: undefined,
       error: undefined,
@@ -253,7 +266,7 @@ describe('usePatients', () => {
     expect(result.current.patients).toHaveLength(0);
   });
 
-  it('returns filtered patients matching providerUuid', () => {
+  it('returns filtered patients matching userUuid', () => {
     const visit = makeVisit();
     (useSWR as jest.Mock).mockReturnValue({
       data: [visit],
@@ -262,7 +275,7 @@ describe('usePatients', () => {
       mutate: mockMutate,
     });
 
-    const { result } = renderHook(() => usePatients('doctor-uuid'));
+    const { result } = renderHook(() => usePatients('user-uuid'));
 
     expect(result.current.patients).toHaveLength(1);
     expect(result.current.patients[0].patientUuid).toBe('patient-uuid-1');
@@ -272,7 +285,7 @@ describe('usePatients', () => {
     expect(result.current.isLoading).toBe(false);
   });
 
-  it('excludes visits where doctor is not a provider', () => {
+  it('excludes visits not created by user', () => {
     const visit = makeVisit();
     (useSWR as jest.Mock).mockReturnValue({
       data: [visit],
@@ -281,7 +294,7 @@ describe('usePatients', () => {
       mutate: mockMutate,
     });
 
-    const { result } = renderHook(() => usePatients('different-doctor-uuid'));
+    const { result } = renderHook(() => usePatients('different-user-uuid'));
 
     expect(result.current.patients).toHaveLength(0);
   });
@@ -324,7 +337,7 @@ describe('usePatients', () => {
       mutate: mockMutate,
     });
 
-    const { result } = renderHook(() => usePatients('doctor-uuid'));
+    const { result } = renderHook(() => usePatients('user-uuid'));
 
     expect(result.current.error).toBe(networkError);
     expect(result.current.isLoading).toBe(false);
@@ -339,7 +352,7 @@ describe('usePatients', () => {
       mutate: mockMutate,
     });
 
-    const { result } = renderHook(() => usePatients('doctor-uuid'));
+    const { result } = renderHook(() => usePatients('user-uuid'));
 
     expect(result.current.isRefreshing).toBe(true);
     expect(result.current.isLoading).toBe(false);
@@ -353,7 +366,7 @@ describe('usePatients', () => {
       mutate: mockMutate,
     });
 
-    const { result } = renderHook(() => usePatients('doctor-uuid'));
+    const { result } = renderHook(() => usePatients('user-uuid'));
 
     expect(result.current.isRefreshing).toBe(false);
     expect(result.current.isLoading).toBe(true);
@@ -368,7 +381,7 @@ describe('usePatients', () => {
       mutate: mockMutate,
     });
 
-    const { result } = renderHook(() => usePatients('doctor-uuid'));
+    const { result } = renderHook(() => usePatients('user-uuid'));
 
     expect(result.current.isRefreshing).toBe(false);
   });
