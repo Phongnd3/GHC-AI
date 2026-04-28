@@ -1,6 +1,6 @@
 # Story 2.8: [BUG] Login Fails on First Attempt with "An error occurred"
 
-**Status:** done  
+**Status:** ready-for-dev  
 **Epic:** 2 - Authentication & Session Management  
 **Story ID:** 2.8  
 **Type:** Bug  
@@ -55,28 +55,21 @@ So that I can access my patients without confusion or repeated login attempts.
 
 ## Tasks / Subtasks
 
-- [x] Task 1: Investigate root cause of first-attempt failure (AC: #1, #2)
-  - [x] Check `src/services/api/auth.ts` `login()` for race conditions or uninitialized state
-  - [x] Check `src/contexts/AuthContext.tsx` for initialization timing issues
-  - [x] Check `src/services/api/client.ts` for lazy initialization that may fail on first call
-  - [x] Check if SecureStore read on mount causes a state conflict with the login call
-  - [x] Check if the error is swallowed/misclassified (network vs auth error)
-  - [x] Add temporary logging to identify which layer throws on first attempt
+- [ ] Task 1: Investigate root cause of first-attempt failure (AC: #1, #2)
+  - [ ] Check `src/services/api/auth.ts` `login()` for race conditions or uninitialized state
+  - [ ] Check `src/contexts/AuthContext.tsx` for initialization timing issues
+  - [ ] Check `src/services/api/client.ts` for lazy initialization that may fail on first call
+  - [ ] Check if SecureStore read on mount causes a state conflict with the login call
+  - [ ] Check if the error is swallowed/misclassified (network vs auth error)
+  - [ ] Add temporary logging to identify which layer throws on first attempt
 
-- [x] Task 2: Fix the identified root cause (AC: #1, #2)
-  - [x] Apply fix in the appropriate layer (auth service, API client, or AuthContext)
-  - [x] Ensure no regression on: invalid credentials error (Story 2.2), network error (Story 2.3)
+- [ ] Task 2: Fix the identified root cause (AC: #1, #2)
+  - [ ] Apply fix in the appropriate layer (auth service, API client, or AuthContext)
+  - [ ] Ensure no regression on: invalid credentials error (Story 2.2), network error (Story 2.3)
 
-- [x] Task 3: Add regression test (AC: #1)
-  - [x] Add unit/integration test that simulates first-attempt login and asserts success
-  - [x] Test covers: fresh mount → login call → success (no prior state)
-
-### Review Findings
-
-- [x] [Review][Patch] `_isLoginRequest` string is duplicated across `auth.ts` and `client.ts` with no shared constant — a typo in either location silently breaks the guard [`auth.ts` line ~44, `client.ts` line ~18]
-- [x] [Review][Defer] `logout()` DELETE is not guarded with `_isLoginRequest` — asymmetry with the comment, but correct behavior (logout should send the session cookie to invalidate server-side) [`client.ts`] — deferred, intentional asymmetry
-- [x] [Review][Defer] iOS native cookie jar (`NSURLSession`) is not cleared — if a prior `JSESSIONID` is in the native cookie store, iOS may still attach it to the login POST below the Axios layer; fix is necessary but may not be sufficient on all iOS configurations [`auth.ts`] — deferred, requires native cookie clearing module out of scope for this fix
-- [x] [Review][Defer] No test for `_isLoginRequest: false` (explicit false vs absent) — `=== true` guard is correct and the true case is tested; explicit-false case is a minor gap [`client.test.ts`] — deferred, low risk
+- [ ] Task 3: Add regression test (AC: #1)
+  - [ ] Add unit/integration test that simulates first-attempt login and asserts success
+  - [ ] Test covers: fresh mount → login call → success (no prior state)
 
 ---
 
@@ -128,48 +121,3 @@ src/utils/errorHandler.ts         # Error classification and display
 - Story 2.3: Network errors must still be handled and displayed correctly
 - Story 2.4: Session timeout behavior must be unaffected
 - Story 2.7: Session persistence on restart must be unaffected
-
----
-
-## Dev Agent Record
-
-### Completion Notes
-
-**Root Cause (confirmed via device logs):**
-
-The pre-login `DELETE /session` in `auth.ts` was the culprit. When it fired, the iOS native HTTP stack received a `Set-Cookie: JSESSIONID=...` from the DELETE response and cached it. The subsequent `POST /session` then had that cookie automatically attached by iOS. OpenMRS saw the existing `JSESSIONID`, reused the session, and returned the session data **without** a new `Set-Cookie` header — so `extractJSessionId` found nothing and threw "No session token received from server". `mapErrorToUserMessage` classified this as `UNKNOWN_ERROR` → "An unexpected error occurred."
-
-The second tap worked because by then the iOS cookie cache had settled or the session had expired.
-
-**Fix applied:**
-
-1. `auth.ts` — Removed the pre-login `DELETE /session` entirely. The comment explains why it must not be added back.
-2. `client.ts` — Added `_isLoginRequest` guard to the request interceptor so stored `JSESSIONID` cookies are never attached to login requests (defense-in-depth: prevents the same failure if a stale token is in SecureStore).
-
-**Tests added:**
-- `auth.test.ts`: regression test asserting `apiClient.delete` is NOT called during `login()`
-- `client.test.ts`: regression test asserting Cookie header is NOT attached when `_isLoginRequest: true`
-
-All 129 tests pass. TypeScript: clean. Lint: 0 errors.
-
----
-
-## File List
-
-**Modified Files:**
-- `ghc-ai-doctor-app/src/services/api/auth.ts` — removed pre-login `DELETE /session`
-- `ghc-ai-doctor-app/src/services/api/client.ts` — added `_isLoginRequest` guard to request interceptor
-- `ghc-ai-doctor-app/src/services/api/__tests__/auth.test.ts` — added regression test
-- `ghc-ai-doctor-app/src/services/__tests__/client.test.ts` — added regression test
-
----
-
-## Change Log
-
-**Date:** 2026-04-28
-
-**Changes:**
-- Removed pre-login `DELETE /session` from `auth.ts` (root cause of first-attempt login failure)
-- Added `_isLoginRequest` guard to `client.ts` request interceptor (prevents stale cookie attachment on login)
-- Added 2 regression tests covering both fix points
-- All 129 tests pass
