@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { apiClient } from '../api/client';
+import { apiClient, LOGIN_REQUEST_FLAG } from '../api/client';
 
 jest.mock('expo-secure-store', () => ({
   getItemAsync: jest.fn(),
@@ -48,6 +48,18 @@ describe('apiClient', () => {
     } as any);
     // Basic Auth header must be preserved — Cookie must NOT be set when Authorization is present
     expect(config.headers.get('Authorization')).toBe('Basic dXNlcjpwYXNz');
+    expect(config.headers.get('Cookie')).toBeUndefined();
+  });
+
+  it('does NOT attach Cookie header when _isLoginRequest is true (Story 2.8 regression guard)', async () => {
+    // Regression test: if a stale JSESSIONID is sent on a login POST, OpenMRS reuses
+    // the old session and skips Set-Cookie in the response — breaking first-attempt login.
+    (SecureStore.getItemAsync as jest.Mock).mockResolvedValue('stale-token');
+    const config = await apiClient.interceptors.request.handlers![0].fulfilled({
+      headers: new axios.AxiosHeaders(),
+      [LOGIN_REQUEST_FLAG]: true,
+    } as any);
+    expect(SecureStore.getItemAsync).not.toHaveBeenCalled();
     expect(config.headers.get('Cookie')).toBeUndefined();
   });
 
