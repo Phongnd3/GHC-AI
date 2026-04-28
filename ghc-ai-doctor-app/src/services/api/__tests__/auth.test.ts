@@ -19,13 +19,21 @@ const mockUserData = {
   },
 };
 
+const mockProviderData = { uuid: 'provider-uuid', display: 'Dr. Test' };
+
 function makeLoginResponse(
-  overrides: Partial<{ authenticated: boolean; setCookie: string | string[] }> = {}
+  overrides: Partial<{
+    authenticated: boolean;
+    setCookie: string | string[];
+    currentProvider: { uuid: string; display: string } | null | undefined;
+  }> = {}
 ) {
+  const hasProvider = 'currentProvider' in overrides;
   return {
     data: {
       authenticated: overrides.authenticated ?? true,
       user: mockUserData,
+      currentProvider: hasProvider ? overrides.currentProvider : mockProviderData,
     },
     headers: {
       'set-cookie': overrides.setCookie ?? 'JSESSIONID=test-session-id; Path=/openmrs; HttpOnly',
@@ -130,6 +138,34 @@ describe('auth service', () => {
       });
 
       await expect(login('testuser', 'password')).rejects.toThrow('No session token received');
+    });
+
+    it('should return currentProvider when present in response', async () => {
+      (apiClient.post as jest.Mock).mockResolvedValue(makeLoginResponse());
+
+      const result = await login('testuser', 'password');
+
+      expect(result.currentProvider).toEqual({ uuid: 'provider-uuid', display: 'Dr. Test' });
+    });
+
+    it('should return currentProvider as null when absent from response', async () => {
+      (apiClient.post as jest.Mock).mockResolvedValue(
+        makeLoginResponse({ currentProvider: null })
+      );
+
+      const result = await login('testuser', 'password');
+
+      expect(result.currentProvider).toBeNull();
+    });
+
+    it('should return currentProvider as null when undefined in response', async () => {
+      (apiClient.post as jest.Mock).mockResolvedValue(
+        makeLoginResponse({ currentProvider: undefined })
+      );
+
+      const result = await login('testuser', 'password');
+
+      expect(result.currentProvider).toBeNull();
     });
 
     it('should handle non-Latin1 characters in credentials without throwing', async () => {

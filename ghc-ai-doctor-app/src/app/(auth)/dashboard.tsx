@@ -1,23 +1,21 @@
 import React, { useState, useCallback } from 'react';
-import { BackHandler, View, StyleSheet } from 'react-native';
+import { BackHandler, FlatList, View, StyleSheet } from 'react-native';
 import { Button, Dialog, Portal, Text, IconButton, useTheme } from 'react-native-paper';
 import { Stack, router, useFocusEffect } from 'expo-router';
+import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePatients } from '@/hooks/usePatients';
+import { PatientCard } from '@/components/PatientCard';
+import { EmptyState } from '@/components/EmptyState';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { Spacing } from '@/theme/spacing';
+import { BaseColors } from '@/theme/colors';
+import type { FilteredPatientData } from '@/types/patient';
 
-/**
- * My Patients dashboard — placeholder content for Story 3.x.
- * Authenticated users land here after login.
- *
- * Story 2.6: Adds logout confirmation dialog triggered by:
- *   - Logout icon in the header (AC1)
- *   - Android hardware back button (AC1)
- * "Yes" clears the session and navigates to login (AC2).
- * "No" dismisses the dialog and keeps the doctor on the dashboard (AC3).
- */
 export default function DashboardScreen() {
   const theme = useTheme();
-  const { logout } = useAuth();
+  const { logout, providerUuid } = useAuth();
+  const { patients, isLoading, error, mutate, lastUpdatedAt } = usePatients(providerUuid);
 
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -64,6 +62,43 @@ export default function DashboardScreen() {
     // On the error path they are handled in the catch block above.
   }
 
+  function renderContent() {
+    if (isLoading) {
+      return <LoadingSkeleton count={3} />;
+    }
+    if (error) {
+      return (
+        <EmptyState
+          icon="wifi-off"
+          message="Unable to load patients. Tap to retry."
+          actionLabel="Retry"
+          onActionPress={mutate}
+        />
+      );
+    }
+    if (patients.length === 0) {
+      return (
+        <EmptyState
+          icon="account-group"
+          message="No active patients assigned to you"
+        />
+      );
+    }
+    return (
+      <FlatList
+        data={patients}
+        keyExtractor={(item: FilteredPatientData) => item.visitUuid}
+        renderItem={({ item }: { item: FilteredPatientData }) => (
+          <PatientCard
+            patient={item}
+            onPress={() => router.push(`/patient/${item.patientUuid}` as never)}
+          />
+        )}
+        contentContainerStyle={styles.listContent}
+      />
+    );
+  }
+
   return (
     <>
       <Stack.Screen
@@ -81,12 +116,13 @@ export default function DashboardScreen() {
         }}
       />
 
-      {/* Dashboard content placeholder — full implementation in Story 3.x */}
       <View style={styles.container}>
-        <Text variant="headlineMedium">My Patients</Text>
-        <Text variant="bodyLarge" style={styles.subtitle}>
-          Dashboard coming in Epic 3
-        </Text>
+        {lastUpdatedAt !== null && (
+          <Text variant="bodySmall" style={styles.lastUpdated}>
+            {`Last updated: ${formatDistanceToNow(lastUpdatedAt, { addSuffix: true })}`}
+          </Text>
+        )}
+        {renderContent()}
       </View>
 
       <Portal>
@@ -118,17 +154,19 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
     flex: 1,
-    justifyContent: 'center',
-    padding: Spacing.xxl,
   },
   errorText: {
     color: 'red',
     marginTop: Spacing.sm,
   },
-  subtitle: {
-    marginTop: Spacing.md,
-    opacity: 0.6,
+  lastUpdated: {
+    color: BaseColors.textSecondary,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
+  },
+  listContent: {
+    padding: Spacing.md,
   },
 });
