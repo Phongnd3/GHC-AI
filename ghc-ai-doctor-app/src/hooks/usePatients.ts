@@ -88,7 +88,7 @@ export function usePatients(userUuid: string | null): UsePatientsResult {
             displayName: resolveDisplayName(visit.patient),
             patientId: resolvePatientId(visit.patient),
             age: resolveAge(visit.patient.person),
-            gender: visit.patient.person.gender,
+            gender: visit.patient.person?.gender ?? 'Unknown',
             ward: visit.location?.display ?? null,
             visitUuid: visit.uuid,
           }))
