@@ -496,6 +496,28 @@ describe('DashboardScreen - patient list', () => {
 
     expect(queryByText(/Last updated:/)).toBeNull();
   });
+
+  it('navigates to clinical summary when patient card is tapped', () => {
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      patients: [
+        {
+          patientUuid: 'patient-uuid-1',
+          displayName: 'John Doe',
+          patientId: 'MRN-001',
+          age: '44y',
+          gender: 'M',
+          ward: 'Ward A',
+          visitUuid: 'visit-uuid-1',
+        },
+      ],
+    });
+
+    const { getByText } = render(<DashboardScreen />);
+    fireEvent.press(getByText('John Doe'));
+
+    expect(router.push).toHaveBeenCalledWith('/patient/patient-uuid-1');
+  });
 });
 
 describe('DashboardScreen - refresh', () => {

@@ -91,7 +91,7 @@ export default function DashboardScreen() {
         renderItem={({ item }: { item: FilteredPatientData }) => (
           <PatientCard
             patient={item}
-            onPress={() => router.push(`/patient/${item.patientUuid}` as never)}
+            onPress={() => router.push(`/patient/${item.patientUuid}`)}
           />
         )}
         contentContainerStyle={styles.listContent}
