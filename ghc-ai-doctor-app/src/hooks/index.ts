@@ -1,1 +1,1 @@
-export {};
+export { usePatients } from './usePatients';

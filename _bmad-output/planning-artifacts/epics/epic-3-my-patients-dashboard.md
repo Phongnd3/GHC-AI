@@ -19,7 +19,7 @@ So that I can quickly identify which patients I need to see today.
 **AC1.**
 **Given** I am logged in as a doctor
 **When** I view the My Patients dashboard
-**Then** I see a list of patients with active visits where I am the primary provider
+**Then** I see a list of patients with active visits where I am the visit creator
 **And** Each patient card displays: Name, Patient ID, Age, Gender
 **And** The list loads within 2 seconds
 
@@ -29,8 +29,9 @@ So that I can quickly identify which patients I need to see today.
 **Then** The list is scrollable to view all patients
 
 **Technical Context:**
-- GET /visit?provider={doctorUuid}&includeInactive=false
-- Filter: stopDatetime = null (active visits only)
+- GET /visit?includeInactive=false&v=full
+- Filter client-side: stopDatetime = null (active visits) AND auditInfo.creator.uuid = userUuid
+- Changed from encounterProviders matching to visit creator matching (more reliable with current data)
 - SWR with 5-minute cache
 - Covers FR6, FR7, FR8, FR9, NFR2
 

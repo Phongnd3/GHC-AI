@@ -2,11 +2,25 @@ import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import DashboardScreen from '../dashboard';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePatients } from '@/hooks/usePatients';
 import { router } from 'expo-router';
 
 jest.mock('@/contexts/AuthContext', () => ({
   useAuth: jest.fn(),
 }));
+
+jest.mock('@/hooks/usePatients', () => ({
+  usePatients: jest.fn(),
+}));
+
+const defaultPatientsResult = {
+  patients: [],
+  isLoading: false,
+  isRefreshing: false,
+  error: undefined,
+  mutate: jest.fn(),
+  lastUpdatedAt: null,
+};
 
 // Mock expo-router — useFocusEffect must call its callback immediately so
 // the BackHandler subscription is registered during the test render.
@@ -144,17 +158,34 @@ jest.mock('react-native-paper', () => {
     <RN.Text {...rest}>{children}</RN.Text>
   );
 
+  const Icon = () => null;
+
+  const Card = Object.assign(
+    ({ children, ...rest }: { children: React.ReactNode; [key: string]: unknown }) => (
+      <RN.View {...rest}>{children}</RN.View>
+    ),
+    {
+      Content: ({ children }: { children: React.ReactNode }) => <RN.View>{children}</RN.View>,
+    }
+  );
+
   return {
     Button,
     IconButton,
     Dialog,
     Portal,
     Text,
+    Icon,
+    Card,
     useTheme: () => ({
       colors: {
         onSurface: '#000000',
         background: '#ffffff',
         onBackground: '#000000',
+        primary: '#6200ee',
+        error: '#b00020',
+        surface: '#ffffff',
+        onSurfaceVariant: '#555555',
       },
     }),
   };
@@ -175,7 +206,8 @@ describe('DashboardScreen - logout', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockBackHandlerListeners = [];
-    (useAuth as jest.Mock).mockReturnValue({ logout: mockLogout });
+    (useAuth as jest.Mock).mockReturnValue({ logout: mockLogout, providerUuid: 'doctor-uuid' });
+    (usePatients as jest.Mock).mockReturnValue(defaultPatientsResult);
   });
 
   it('shows logout confirmation dialog when logout icon is pressed', () => {
@@ -339,5 +371,342 @@ describe('DashboardScreen - logout', () => {
     expect(getByText('Are you sure you want to log out?')).toBeTruthy();
 
     resolveLogout();
+  });
+});
+
+describe('DashboardScreen - patient list', () => {
+  const mockLogout = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockBackHandlerListeners = [];
+    (useAuth as jest.Mock).mockReturnValue({ logout: mockLogout, providerUuid: 'doctor-uuid' });
+  });
+
+  it('shows loading skeleton when data is loading', () => {
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      isLoading: true,
+    });
+
+    const { queryByText } = render(<DashboardScreen />);
+
+    expect(queryByText('John Doe')).toBeNull();
+    expect(queryByText('No active patients assigned to you')).toBeNull();
+    expect(queryByText('Unable to load patients. Tap to retry.')).toBeNull();
+  });
+
+  it('shows patient cards when patients are loaded', () => {
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      patients: [
+        {
+          patientUuid: 'patient-uuid-1',
+          displayName: 'John Doe',
+          patientId: 'MRN-001',
+          age: '44y',
+          gender: 'M',
+          ward: 'Ward A',
+          visitUuid: 'visit-uuid-1',
+        },
+      ],
+    });
+
+    const { getByText } = render(<DashboardScreen />);
+
+    expect(getByText('John Doe')).toBeTruthy();
+    expect(getByText('ID: MRN-001  •  44y  •  M')).toBeTruthy();
+    expect(getByText('Ward: Ward A')).toBeTruthy();
+  });
+
+  it('shows empty state when no patients are assigned', () => {
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      patients: [],
+    });
+
+    const { getByText } = render(<DashboardScreen />);
+
+    expect(getByText('No active patients assigned to you')).toBeTruthy();
+  });
+
+  it('does not render patient cards when patient list is empty', () => {
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      patients: [],
+    });
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { FlatList } = require('react-native');
+    const { UNSAFE_queryByType, queryByText } = render(<DashboardScreen />);
+
+    // No FlatList should be rendered — renderContent() returns EmptyState before reaching it
+    expect(UNSAFE_queryByType(FlatList)).toBeNull();
+    // Empty state message is present
+    expect(queryByText('No active patients assigned to you')).toBeTruthy();
+    // Error message is not present
+    expect(queryByText('Unable to load patients. Tap to retry.')).toBeNull();
+  });
+
+  it('shows error state with retry when fetch fails', () => {
+    const mockMutate = jest.fn();
+    const networkError = { request: {}, message: 'Network Error' };
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      error: networkError,
+      mutate: mockMutate,
+    });
+
+    const { getByText } = render(<DashboardScreen />);
+
+    expect(getByText('Unable to load patients. Tap to retry.')).toBeTruthy();
+    expect(getByText('Retry')).toBeTruthy();
+  });
+
+  it('calls mutate when retry button is pressed', () => {
+    const mockMutate = jest.fn();
+    const networkError = { request: {}, message: 'Network Error' };
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      error: networkError,
+      mutate: mockMutate,
+    });
+
+    const { getByText } = render(<DashboardScreen />);
+    fireEvent.press(getByText('Retry'));
+
+    expect(mockMutate).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows "last updated" text when lastUpdatedAt is set', () => {
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      lastUpdatedAt: new Date('2024-01-01T10:00:00'),
+    });
+
+    const { getByText } = render(<DashboardScreen />);
+
+    expect(getByText(/Last updated:/)).toBeTruthy();
+  });
+
+  it('does not show "last updated" text when lastUpdatedAt is null', () => {
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      lastUpdatedAt: null,
+    });
+
+    const { queryByText } = render(<DashboardScreen />);
+
+    expect(queryByText(/Last updated:/)).toBeNull();
+  });
+
+  it('navigates to clinical summary when patient card is tapped', () => {
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      patients: [
+        {
+          patientUuid: 'patient-uuid-1',
+          displayName: 'John Doe',
+          patientId: 'MRN-001',
+          age: '44y',
+          gender: 'M',
+          ward: 'Ward A',
+          visitUuid: 'visit-uuid-1',
+        },
+      ],
+    });
+
+    const { getByText } = render(<DashboardScreen />);
+    fireEvent.press(getByText('John Doe'));
+
+    expect(router.push).toHaveBeenCalledWith('/patient/patient-uuid-1');
+  });
+});
+
+describe('DashboardScreen - refresh', () => {
+  const mockMutate = jest.fn();
+  const samplePatient = {
+    patientUuid: 'patient-uuid-1',
+    displayName: 'John Doe',
+    patientId: 'MRN-001',
+    age: '44y',
+    gender: 'M',
+    ward: 'Ward A',
+    visitUuid: 'visit-uuid-1',
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockBackHandlerListeners = [];
+    (useAuth as jest.Mock).mockReturnValue({ logout: jest.fn(), providerUuid: 'doctor-uuid' });
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      patients: [samplePatient],
+      mutate: mockMutate,
+    });
+  });
+
+  it('shows refresh icon button in header', () => {
+    const { getByLabelText } = render(<DashboardScreen />);
+
+    expect(getByLabelText('Refresh')).toBeTruthy();
+  });
+
+  it('tapping refresh icon calls mutate', () => {
+    const { getByLabelText } = render(<DashboardScreen />);
+
+    fireEvent.press(getByLabelText('Refresh'));
+
+    expect(mockMutate).toHaveBeenCalledTimes(1);
+  });
+
+  it('FlatList renders with refreshControl prop when patients are loaded', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { FlatList } = require('react-native');
+    const { UNSAFE_getByType } = render(<DashboardScreen />);
+    const flatList = UNSAFE_getByType(FlatList);
+
+    expect(flatList.props.refreshControl).toBeTruthy();
+    expect(flatList.props.refreshControl.props.refreshing).toBe(false);
+    expect(flatList.props.refreshControl.props.onRefresh).toBe(mockMutate);
+  });
+
+  it('passes isRefreshing=true to RefreshControl when refreshing', () => {
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      patients: [samplePatient],
+      isRefreshing: true,
+      mutate: mockMutate,
+    });
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { FlatList } = require('react-native');
+    const { UNSAFE_getByType } = render(<DashboardScreen />);
+    const flatList = UNSAFE_getByType(FlatList);
+
+    expect(flatList.props.refreshControl.props.refreshing).toBe(true);
+  });
+});
+
+describe('DashboardScreen - error handling', () => {
+  const mockMutate = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockBackHandlerListeners = [];
+    (useAuth as jest.Mock).mockReturnValue({ logout: jest.fn(), user: { uuid: 'doctor-uuid' } });
+  });
+
+  it('shows network error message for network errors', () => {
+    const networkError = { request: {}, message: 'Network Error' };
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      error: networkError,
+      mutate: mockMutate,
+    });
+
+    const { getByText } = render(<DashboardScreen />);
+
+    expect(getByText('Unable to load patients. Tap to retry.')).toBeTruthy();
+    expect(getByText('Retry')).toBeTruthy();
+  });
+
+  it('shows generic error message for server errors', () => {
+    const serverError = { response: { status: 500 }, message: 'Server Error' };
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      error: serverError,
+      mutate: mockMutate,
+    });
+
+    const { getByText } = render(<DashboardScreen />);
+
+    expect(getByText('Unable to load patients. Please try again later.')).toBeTruthy();
+    expect(getByText('Retry')).toBeTruthy();
+  });
+
+  it('calls mutate when retry button is tapped', () => {
+    const networkError = { request: {}, message: 'Network Error' };
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      error: networkError,
+      mutate: mockMutate,
+    });
+
+    const { getByText } = render(<DashboardScreen />);
+    fireEvent.press(getByText('Retry'));
+
+    expect(mockMutate).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows loading state on retry button when retrying', () => {
+    const networkError = { request: {}, message: 'Network Error' };
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      error: networkError,
+      isRefreshing: true,
+      mutate: mockMutate,
+    });
+
+    const { getByText } = render(<DashboardScreen />);
+    const retryButton = getByText('Retry');
+
+    expect(retryButton).toBeDisabled();
+  });
+
+  it('hides error state when retry succeeds', () => {
+    const networkError = { request: {}, message: 'Network Error' };
+    const { rerender, queryByText } = render(<DashboardScreen />);
+
+    // Initial error state
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      error: networkError,
+      mutate: mockMutate,
+    });
+    rerender(<DashboardScreen />);
+    expect(queryByText('Unable to load patients. Tap to retry.')).toBeTruthy();
+
+    // After successful retry
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      patients: [
+        {
+          patientUuid: 'patient-uuid-1',
+          displayName: 'John Doe',
+          patientId: 'MRN-001',
+          age: '44y',
+          gender: 'M',
+          ward: 'Ward A',
+          visitUuid: 'visit-uuid-1',
+        },
+      ],
+      mutate: mockMutate,
+    });
+    rerender(<DashboardScreen />);
+
+    expect(queryByText('Unable to load patients. Tap to retry.')).toBeNull();
+    expect(queryByText('John Doe')).toBeTruthy();
+  });
+
+  it('shows error state again if retry fails', () => {
+    const networkError = { request: {}, message: 'Network Error' };
+    const { rerender, getByText } = render(<DashboardScreen />);
+
+    // Initial error state
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      error: networkError,
+      mutate: mockMutate,
+    });
+    rerender(<DashboardScreen />);
+
+    // Retry still fails
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      error: networkError,
+      mutate: mockMutate,
+    });
+    rerender(<DashboardScreen />);
+
+    expect(getByText('Unable to load patients. Tap to retry.')).toBeTruthy();
   });
 });

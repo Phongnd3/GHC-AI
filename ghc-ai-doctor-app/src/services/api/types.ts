@@ -11,4 +11,5 @@ export interface SessionResponse {
       display: string;
     };
   };
+  currentProvider: { uuid: string; display: string } | null;
 }

@@ -1,23 +1,25 @@
 import React, { useState, useCallback } from 'react';
-import { BackHandler, View, StyleSheet } from 'react-native';
+import { BackHandler, FlatList, RefreshControl, View, StyleSheet } from 'react-native';
 import { Button, Dialog, Portal, Text, IconButton, useTheme } from 'react-native-paper';
 import { Stack, router, useFocusEffect } from 'expo-router';
+import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePatients } from '@/hooks/usePatients';
+import { PatientCard } from '@/components/PatientCard';
+import { EmptyState } from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { mapErrorToUserMessage, ErrorType } from '@/utils/errorHandler';
 import { Spacing } from '@/theme/spacing';
+import { BaseColors } from '@/theme/colors';
+import type { FilteredPatientData } from '@/types/patient';
 
-/**
- * My Patients dashboard — placeholder content for Story 3.x.
- * Authenticated users land here after login.
- *
- * Story 2.6: Adds logout confirmation dialog triggered by:
- *   - Logout icon in the header (AC1)
- *   - Android hardware back button (AC1)
- * "Yes" clears the session and navigates to login (AC2).
- * "No" dismisses the dialog and keeps the doctor on the dashboard (AC3).
- */
 export default function DashboardScreen() {
   const theme = useTheme();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const { patients, isLoading, isRefreshing, error, mutate, lastUpdatedAt } = usePatients(
+    user?.uuid ?? null
+  );
 
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -64,6 +66,35 @@ export default function DashboardScreen() {
     // On the error path they are handled in the catch block above.
   }
 
+  function renderContent() {
+    if (isLoading) {
+      return <LoadingSkeleton count={3} />;
+    }
+    if (error) {
+      const mapped = mapErrorToUserMessage(error);
+      const errorMessage =
+        mapped.type === ErrorType.NETWORK_ERROR
+          ? 'Unable to load patients. Tap to retry.'
+          : 'Unable to load patients. Please try again later.';
+
+      return <ErrorState message={errorMessage} onRetry={mutate} isRetrying={isRefreshing} />;
+    }
+    if (patients.length === 0) {
+      return <EmptyState icon="account-group" message="No active patients assigned to you" />;
+    }
+    return (
+      <FlatList
+        data={patients}
+        keyExtractor={(item: FilteredPatientData) => item.visitUuid}
+        renderItem={({ item }: { item: FilteredPatientData }) => (
+          <PatientCard patient={item} onPress={() => router.push(`/patient/${item.patientUuid}`)} />
+        )}
+        contentContainerStyle={styles.listContent}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={mutate} />}
+      />
+    );
+  }
+
   return (
     <>
       <Stack.Screen
@@ -71,22 +102,31 @@ export default function DashboardScreen() {
           headerShown: true,
           title: 'My Patients',
           headerRight: () => (
-            <IconButton
-              icon="exit-to-app"
-              iconColor={theme.colors.onSurface}
-              onPress={handleLogoutPress}
-              accessibilityLabel="Logout"
-            />
+            <View style={styles.headerActions}>
+              <IconButton
+                icon="refresh"
+                iconColor={theme.colors.onSurface}
+                onPress={mutate}
+                accessibilityLabel="Refresh"
+              />
+              <IconButton
+                icon="exit-to-app"
+                iconColor={theme.colors.onSurface}
+                onPress={handleLogoutPress}
+                accessibilityLabel="Logout"
+              />
+            </View>
           ),
         }}
       />
 
-      {/* Dashboard content placeholder — full implementation in Story 3.x */}
       <View style={styles.container}>
-        <Text variant="headlineMedium">My Patients</Text>
-        <Text variant="bodyLarge" style={styles.subtitle}>
-          Dashboard coming in Epic 3
-        </Text>
+        {lastUpdatedAt !== null && (
+          <Text variant="bodySmall" style={styles.lastUpdated}>
+            {`Last updated: ${formatDistanceToNow(lastUpdatedAt, { addSuffix: true })}`}
+          </Text>
+        )}
+        {renderContent()}
       </View>
 
       <Portal>
@@ -118,17 +158,22 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
     flex: 1,
-    justifyContent: 'center',
-    padding: Spacing.xxl,
   },
   errorText: {
     color: 'red',
     marginTop: Spacing.sm,
   },
-  subtitle: {
-    marginTop: Spacing.md,
-    opacity: 0.6,
+  headerActions: {
+    flexDirection: 'row',
+  },
+  lastUpdated: {
+    color: BaseColors.textSecondary,
+    paddingBottom: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.md,
+  },
+  listContent: {
+    padding: Spacing.md,
   },
 });
