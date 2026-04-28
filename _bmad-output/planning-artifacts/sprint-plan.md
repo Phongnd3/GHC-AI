@@ -54,7 +54,7 @@ Epic 4 (Clinical Summary) ──┘
 
 ## Epic 2: Authentication & Session Management
 
-**Status:** 🔴 Not Started  
+**Status:** 🟡 In Progress  
 **Priority:** P0 - Critical security feature  
 **Dependencies:** Epic 1 complete  
 **Estimated Duration:** 1 sprint  
@@ -62,26 +62,28 @@ Epic 4 (Clinical Summary) ──┘
 
 | Story | Title | Status | Assignee | Notes |
 |-------|-------|--------|----------|-------|
-| 2.1 | Doctor Login with OpenMRS Credentials | 🔴 Not Started | - | POST /session, SecureStore |
-| 2.2 | Handle Invalid Login Credentials | 🔴 Not Started | - | 401 error handling |
-| 2.3 | Handle Network Errors During Login | 🔴 Not Started | - | Retry mechanism |
-| 2.4 | Automatic Session Timeout After 30 Minutes | 🟡 Ready for Dev | - | Inactivity timer |
-| 2.5 | Prevent Screenshots on Clinical Screens | 🔴 Not Started | - | expo-screen-capture |
-| 2.6 | Doctor Logout with Confirmation | 🔴 Not Started | - | DELETE /session |
-| 2.7 | Session Persistence Across App Restarts | 🔴 Not Started | - | SecureStore validation |
+| 2.1 | Doctor Login with OpenMRS Credentials | ✅ Done | - | POST /session, SecureStore |
+| 2.2 | Handle Invalid Login Credentials | ✅ Done | - | 401 error handling |
+| 2.3 | Handle Network Errors During Login | ✅ Done | - | Retry mechanism |
+| 2.4 | Automatic Session Timeout After 30 Minutes | ✅ Done | - | Inactivity timer |
+| 2.5 | Prevent Screenshots on Clinical Screens | ✅ Done | - | expo-screen-capture |
+| 2.6 | Doctor Logout with Confirmation | ✅ Done | - | DELETE /session |
+| 2.7 | Session Persistence Across App Restarts | ✅ Done | - | SecureStore validation |
+| 2.8 | Bug: Login Fails on First Attempt | 🟡 Ready for Dev | - | Bug fix |
 
 **Acceptance Criteria for Epic Completion:**
-- [ ] 100% of doctors can log in with existing credentials
-- [ ] Sessions expire after 30 minutes of inactivity
-- [ ] Screenshots are blocked on all authenticated screens
-- [ ] Sessions persist across app restarts (within timeout)
-- [ ] All error scenarios handled gracefully
+- [x] 100% of doctors can log in with existing credentials
+- [x] Sessions expire after 30 minutes of inactivity
+- [x] Screenshots are blocked on all authenticated screens
+- [x] Sessions persist across app restarts (within timeout)
+- [x] All error scenarios handled gracefully
+- [ ] Bug 2.8 (login fails on first attempt) resolved
 
 ---
 
 ## Epic 3: My Patients Dashboard
 
-**Status:** 🟡 In Progress  
+**Status:** ✅ Complete  
 **Priority:** P0 - Core feature  
 **Dependencies:** Epic 1 complete  
 **Estimated Duration:** 1 sprint  
@@ -95,7 +97,7 @@ Epic 4 (Clinical Summary) ──┘
 | 3.3 | Handle Empty Patient List | ✅ Done | - | EmptyState component |
 | 3.4 | Navigate to Patient Clinical Summary | ✅ Done | - | Expo Router navigation |
 | 3.5 | Display Last Updated Timestamp | ✅ Done | - | date-fns formatting |
-| 3.6 | Handle Network Errors on Dashboard | 🔴 Not Started | - | Retry mechanism |
+| 3.6 | Handle Network Errors on Dashboard | ✅ Done | - | Retry mechanism |
 
 **Acceptance Criteria for Epic Completion:**
 - [x] Patient list loads in < 2 seconds
@@ -103,7 +105,7 @@ Epic 4 (Clinical Summary) ──┘
 - [x] Pull-to-refresh works correctly
 - [x] Empty states display helpful messages
 - [x] Navigation to clinical summary works
-- [ ] Network errors handled gracefully
+- [x] Network errors handled gracefully
 
 ---
 
@@ -167,22 +169,22 @@ Epic 4 (Clinical Summary) ──┘
 
 | Status | Count | Percentage |
 |--------|-------|------------|
-| 🔴 Not Started | 22 | 67% |
-| 🟡 In Progress | 0 | 0% |
-| 🟢 Complete | 11 | 33% |
+| 🔴 Not Started | 12 | 35% |
+| 🟡 Ready for Dev | 1 | 3% |
+| ✅ Done | 21 | 62% |
 | 🔵 Blocked | 0 | 0% |
-| **Total Stories** | **33** | **100%** |
+| **Total Stories** | **34** | **100%** |
 
 ### Epic Status Summary
 
 | Epic | Status | Stories Complete | Progress |
 |------|--------|------------------|----------|
-| Epic 1: Foundation | 🟢 Complete | 8/8 | 100% |
-| Epic 2: Authentication | 🔴 Not Started | 0/7 | 0% |
-| Epic 3: Dashboard | 🟡 In Progress | 5/6 | 83% |
+| Epic 1: Foundation | ✅ Complete | 8/8 | 100% |
+| Epic 2: Authentication | 🟡 In Progress | 7/8 | 88% |
+| Epic 3: Dashboard | ✅ Complete | 6/6 | 100% |
 | Epic 4: Clinical Summary | 🔴 Not Started | 0/7 | 0% |
 | Epic 5: Integration | 🔴 Not Started | 0/5 | 0% |
-| **Overall Progress** | 🟡 In Progress | **11/33** | **33%** |
+| **Overall Progress** | 🟡 In Progress | **21/34** | **62%** |
 
 ---
 
