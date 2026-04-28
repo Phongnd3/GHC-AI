@@ -430,6 +430,23 @@ describe('DashboardScreen - patient list', () => {
     expect(getByText('No active patients assigned to you')).toBeTruthy();
   });
 
+  it('does not render patient cards when patient list is empty', () => {
+    (usePatients as jest.Mock).mockReturnValue({
+      ...defaultPatientsResult,
+      patients: [],
+    });
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { FlatList } = require('react-native');
+    const { UNSAFE_queryByType, queryByText } = render(<DashboardScreen />);
+
+    // No FlatList should be rendered — renderContent() returns EmptyState before reaching it
+    expect(UNSAFE_queryByType(FlatList)).toBeNull();
+    // Empty state message is present
+    expect(queryByText('No active patients assigned to you')).toBeTruthy();
+    // Error message is not present
+    expect(queryByText('Unable to load patients. Tap to retry.')).toBeNull();
+  });
+
   it('shows error state with retry when fetch fails', () => {
     const mockMutate = jest.fn();
     (usePatients as jest.Mock).mockReturnValue({
