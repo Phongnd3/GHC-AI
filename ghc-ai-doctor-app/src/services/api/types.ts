@@ -1,6 +1,6 @@
 export interface SessionResponse {
   authenticated: boolean;
-  sessionId: string; // Extracted from JSESSIONID Set-Cookie header
+  sessionId: string | null; // Extracted when exposed; native cookie jar may hold it otherwise
   user: {
     uuid: string;
     display: string;

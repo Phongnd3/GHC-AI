@@ -62,7 +62,9 @@ describe('patients service', () => {
 
       await getActiveVisits();
 
-      expect(apiClient.get).toHaveBeenCalledWith('/visit?includeInactive=false&v=full');
+      expect(apiClient.get).toHaveBeenCalledWith(
+        '/visit?includeInactive=false&v=custom:(uuid,display,patient:(uuid,display,identifiers,person:(uuid,names,gender,birthdate,birthdateEstimated,dead),voided),visitType,location,startDatetime,stopDatetime,encounters,attributes,voided,auditInfo)'
+      );
     });
 
     it('should return the results array from the response', async () => {

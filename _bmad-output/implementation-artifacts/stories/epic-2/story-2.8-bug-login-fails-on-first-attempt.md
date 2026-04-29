@@ -1,6 +1,6 @@
 # Story 2.8: [BUG] Login Fails on First Attempt with "An error occurred"
 
-**Status:** ready-for-dev  
+**Status:** review  
 **Epic:** 2 - Authentication & Session Management  
 **Story ID:** 2.8  
 **Type:** Bug  
@@ -55,21 +55,21 @@ So that I can access my patients without confusion or repeated login attempts.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Investigate root cause of first-attempt failure (AC: #1, #2)
-  - [ ] Check `src/services/api/auth.ts` `login()` for race conditions or uninitialized state
-  - [ ] Check `src/contexts/AuthContext.tsx` for initialization timing issues
-  - [ ] Check `src/services/api/client.ts` for lazy initialization that may fail on first call
-  - [ ] Check if SecureStore read on mount causes a state conflict with the login call
-  - [ ] Check if the error is swallowed/misclassified (network vs auth error)
-  - [ ] Add temporary logging to identify which layer throws on first attempt
+- [x] Task 1: Investigate root cause of first-attempt failure (AC: #1, #2)
+  - [x] Check `src/services/api/auth.ts` `login()` for race conditions or uninitialized state
+  - [x] Check `src/contexts/AuthContext.tsx` for initialization timing issues
+  - [x] Check `src/services/api/client.ts` for lazy initialization that may fail on first call
+  - [x] Check if SecureStore read on mount causes a state conflict with the login call
+  - [x] Check if the error is swallowed/misclassified (network vs auth error)
+  - [x] Add temporary logging to identify which layer throws on first attempt
 
-- [ ] Task 2: Fix the identified root cause (AC: #1, #2)
-  - [ ] Apply fix in the appropriate layer (auth service, API client, or AuthContext)
-  - [ ] Ensure no regression on: invalid credentials error (Story 2.2), network error (Story 2.3)
+- [x] Task 2: Fix the identified root cause (AC: #1, #2)
+  - [x] Apply fix in the appropriate layer (auth service, API client, or AuthContext)
+  - [x] Ensure no regression on: invalid credentials error (Story 2.2), network error (Story 2.3)
 
-- [ ] Task 3: Add regression test (AC: #1)
-  - [ ] Add unit/integration test that simulates first-attempt login and asserts success
-  - [ ] Test covers: fresh mount → login call → success (no prior state)
+- [x] Task 3: Add regression test (AC: #1)
+  - [x] Add unit/integration test that simulates first-attempt login and asserts success
+  - [x] Test covers: fresh mount -> login call -> success (no prior state)
 
 ---
 
@@ -121,3 +121,54 @@ src/utils/errorHandler.ts         # Error classification and display
 - Story 2.3: Network errors must still be handled and displayed correctly
 - Story 2.4: Session timeout behavior must be unaffected
 - Story 2.7: Session persistence on restart must be unaffected
+
+---
+
+## Dev Agent Record
+
+### Debug Log
+
+- 2026-04-29: Confirmed story key 2.8 from `story-2.8-bug-login-fails-on-first-attempt.md`; no sprint-status file exists at configured implementation artifacts path.
+- 2026-04-29: Inspected `auth.ts`, `client.ts`, `AuthContext.tsx`, login screen, and centralized error handler. Root cause isolated to `AuthContext` allowing `login()` to call the auth API while the initial SecureStore-backed `checkSession()` was still pending.
+- 2026-04-29: Added failing regression test proving `apiLogin` was called before initial session restore completed.
+- 2026-04-29: Implemented session-check promise tracking in `AuthContext` and made `login()` await the startup session check before calling `apiLogin`.
+- 2026-04-29: Full test run initially exposed an unrelated stale patients endpoint assertion; updated the test to match the existing custom visit representation so regression validation can run cleanly.
+- 2026-04-29: User reproduced first-login failure on fresh Expo run with "An unexpected error occurred"; added failing auth-service test for successful OpenMRS response where `Set-Cookie` is not exposed but `sessionId` is present in the response body.
+- 2026-04-29: Updated `auth.ts` token extraction to fall back to `response.data.sessionId` when the JSESSIONID cookie header is unavailable.
+- 2026-04-29: User still reproduced the same generic message after the sessionId fallback; removed dependency on native `btoa` by adding a local UTF-8 Base64 encoder and test coverage for native runtimes without `btoa`.
+- 2026-04-29: User requested additional diagnostics after continued generic first-login failure; added sanitized login-flow logs across `auth.ts`, `AuthContext.tsx`, and the login screen catch path.
+- 2026-04-29: Device log showed OpenMRS o3 returns `authenticated: true` but exposes neither `Set-Cookie` nor body `sessionId`; changed `SessionResponse.sessionId` to nullable and allowed authenticated runtime-cookie sessions to proceed without SecureStore token persistence.
+- 2026-04-29: Removed temporary diagnostic logs after user confirmed login works.
+
+### Completion Notes
+
+- Fixed first-attempt login race by serializing login behind the initial session restore in `AuthContext`.
+- Added a regression test for fresh mount with pending SecureStore read -> login call -> successful authentication.
+- Verified invalid credentials and network error behavior through existing auth service and login screen suites.
+- Updated stale patients service endpoint assertion encountered during full regression run; production patient service behavior was unchanged.
+- Added response-body `sessionId` fallback so mobile runtimes that do not expose `Set-Cookie` can still persist the confirmed OpenMRS session on the first login attempt.
+- Replaced `btoa(unescape(encodeURIComponent(...)))` with local UTF-8 Base64 encoding so native runtime globals cannot block the first login request.
+- Added temporary sanitized diagnostics for first-login failure triage: request stage, response status/data/header keys, token source, AuthContext persistence stage, and final UI error mapping.
+- Fixed confirmed o3 behavior where login succeeds but no session token is exposed to React Native; AuthContext now authenticates the user using the active native cookie session and skips stale SecureStore persistence when `sessionId` is null.
+- Removed temporary login diagnostics from `auth.ts`, `AuthContext.tsx`, and `src/app/index.tsx`.
+- Validation passed: `npm test -- --runTestsByPath src/services/api/__tests__/auth.test.ts --runInBand`, `npm test -- --runTestsByPath src/contexts/__tests__/AuthContext.test.tsx --runInBand`, `npm test -- --runTestsByPath src/app/__tests__/index.test.tsx --runInBand`, `npm run type-check`, `npm test -- --runInBand`, and `npm run lint` (0 errors, 5 existing warnings).
+
+## File List
+
+- `ghc-ai-doctor-app/src/contexts/AuthContext.tsx`
+- `ghc-ai-doctor-app/src/contexts/__tests__/AuthContext.test.tsx`
+- `ghc-ai-doctor-app/src/app/index.tsx`
+- `ghc-ai-doctor-app/src/services/api/auth.ts`
+- `ghc-ai-doctor-app/src/services/api/types.ts`
+- `ghc-ai-doctor-app/src/services/api/__tests__/auth.test.ts`
+- `ghc-ai-doctor-app/src/services/api/__tests__/patients.test.ts`
+- `_bmad-output/implementation-artifacts/stories/epic-2/story-2.8-bug-login-fails-on-first-attempt.md`
+
+## Change Log
+
+- 2026-04-29: Fixed login startup race, added first-attempt regression coverage, aligned stale patients endpoint test, and marked story ready for review.
+- 2026-04-29: Added OpenMRS response-body sessionId fallback after fresh Expo run still failed when Set-Cookie was unavailable on first login.
+- 2026-04-29: Removed native `btoa` dependency from Basic Auth credential encoding and added regression coverage.
+- 2026-04-29: Added sanitized diagnostic logs to capture the actual failing first-login stage on device.
+- 2026-04-29: Allowed authenticated OpenMRS sessions with no exposed token to complete login using the native runtime cookie session.
+- 2026-04-29: Removed temporary diagnostic logs after verification.

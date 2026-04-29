@@ -97,6 +97,22 @@ describe('auth service', () => {
       expect(result.sessionId).toBe('array-session-id');
     });
 
+    it('should fall back to response body sessionId when Set-Cookie is not exposed', async () => {
+      (apiClient.post as jest.Mock).mockResolvedValue({
+        data: {
+          authenticated: true,
+          sessionId: 'body-session-id',
+          user: mockUserData,
+          currentProvider: mockProviderData,
+        },
+        headers: {},
+      });
+
+      const result = await login('testuser', 'password');
+
+      expect(result.sessionId).toBe('body-session-id');
+    });
+
     it('should return a typed SessionResponse', async () => {
       (apiClient.post as jest.Mock).mockResolvedValue(makeLoginResponse());
 
@@ -131,13 +147,17 @@ describe('auth service', () => {
       expect(thrownError?.code).toBe('AUTH_CREDENTIALS_INVALID');
     });
 
-    it('should throw when no JSESSIONID cookie is returned', async () => {
+    it('should allow authenticated response when no session token is exposed', async () => {
       (apiClient.post as jest.Mock).mockResolvedValue({
         data: { authenticated: true, user: mockUserData },
         headers: {},
       });
 
-      await expect(login('testuser', 'password')).rejects.toThrow('No session token received');
+      const result = await login('testuser', 'password');
+
+      expect(result.authenticated).toBe(true);
+      expect(result.sessionId).toBeNull();
+      expect(result.user.username).toBe('testuser');
     });
 
     it('should return currentProvider when present in response', async () => {
@@ -149,9 +169,7 @@ describe('auth service', () => {
     });
 
     it('should return currentProvider as null when absent from response', async () => {
-      (apiClient.post as jest.Mock).mockResolvedValue(
-        makeLoginResponse({ currentProvider: null })
-      );
+      (apiClient.post as jest.Mock).mockResolvedValue(makeLoginResponse({ currentProvider: null }));
 
       const result = await login('testuser', 'password');
 
@@ -176,6 +194,25 @@ describe('auth service', () => {
       const callArgs = (apiClient.post as jest.Mock).mock.calls[0];
       const authHeader = callArgs[2].headers.Authorization;
       expect(authHeader).toMatch(/^Basic /);
+    });
+
+    it('should encode credentials when btoa is unavailable in the native runtime', async () => {
+      const originalBtoa = global.btoa;
+      // @ts-expect-error - intentionally simulates a native runtime without btoa.
+      delete global.btoa;
+      (apiClient.post as jest.Mock).mockResolvedValue(makeLoginResponse());
+
+      try {
+        await login('testuser', 'password');
+      } finally {
+        global.btoa = originalBtoa;
+      }
+
+      const callArgs = (apiClient.post as jest.Mock).mock.calls[0];
+      const authHeader = callArgs[2].headers.Authorization;
+      const encoded = authHeader.replace('Basic ', '');
+      const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+      expect(decoded).toBe('testuser:password');
     });
 
     it('should propagate errors from apiClient', async () => {

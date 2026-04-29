@@ -26,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [sessionExpiredMessage, setSessionExpiredMessage] = useState<string | null>(null);
 
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sessionCheckPromiseRef = useRef<Promise<void> | null>(null);
   // Ref-based auth check to avoid stale closure in resetInactivityTimer (D3)
   const isAuthenticatedRef = useRef(false);
 
@@ -93,7 +94,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Restore session from SecureStore on mount
   useEffect(() => {
-    checkSession();
+    const sessionCheckPromise = checkSession();
+    sessionCheckPromiseRef.current = sessionCheckPromise;
+
+    sessionCheckPromise.finally(() => {
+      if (sessionCheckPromiseRef.current === sessionCheckPromise) {
+        sessionCheckPromiseRef.current = null;
+      }
+    });
   }, []);
 
   async function checkSession() {
@@ -108,7 +116,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (elapsed < SESSION_TIMEOUT_MS) {
           // Session is still valid — restore it and start the inactivity timer
           // Parse before setting state — if JSON is corrupt, no partial state is written
-          const parsedSession = JSON.parse(userJson) as SessionResponse['user'] & { providerUuid?: string };
+          const parsedSession = JSON.parse(userJson) as SessionResponse['user'] & {
+            providerUuid?: string;
+          };
           setIsAuthenticated(true);
           setUser(parsedSession);
           setProviderUuid(parsedSession.providerUuid ?? null);
@@ -148,14 +158,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function login(username: string, password: string) {
+    if (sessionCheckPromiseRef.current) {
+      await sessionCheckPromiseRef.current;
+    }
+
     const response = await apiLogin(username, password);
 
     const providerUuidValue = response.currentProvider?.uuid ?? null;
     // Persist session token, user data (including providerUuid), and timestamp securely
     const userWithProvider = { ...response.user, providerUuid: providerUuidValue };
-    await SecureStore.setItemAsync('sessionToken', response.sessionId);
-    await SecureStore.setItemAsync('sessionUser', JSON.stringify(userWithProvider));
-    await SecureStore.setItemAsync('sessionTimestamp', Date.now().toString());
+    if (response.sessionId) {
+      await SecureStore.setItemAsync('sessionToken', response.sessionId);
+      await SecureStore.setItemAsync('sessionUser', JSON.stringify(userWithProvider));
+      await SecureStore.setItemAsync('sessionTimestamp', Date.now().toString());
+    } else {
+      await Promise.allSettled([
+        SecureStore.deleteItemAsync('sessionToken'),
+        SecureStore.deleteItemAsync('sessionUser'),
+        SecureStore.deleteItemAsync('sessionTimestamp'),
+      ]);
+    }
 
     setIsAuthenticated(true);
     setUser(response.user);

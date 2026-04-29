@@ -103,6 +103,37 @@ describe('AuthContext', () => {
   });
 
   describe('login', () => {
+    it('waits for initial session restore before first login attempt', async () => {
+      let resolveTokenRead: (value: string | null) => void = () => {};
+      const tokenRead = new Promise<string | null>((resolve) => {
+        resolveTokenRead = resolve;
+      });
+
+      (SecureStore.getItemAsync as jest.Mock).mockImplementation((key: string) => {
+        if (key === 'sessionToken') return tokenRead;
+        return Promise.resolve(null);
+      });
+      (apiLogin as jest.Mock).mockResolvedValue(mockSession);
+      (SecureStore.setItemAsync as jest.Mock).mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      let loginPromise: Promise<void>;
+      act(() => {
+        loginPromise = result.current.login('testuser', 'password');
+      });
+
+      expect(apiLogin).not.toHaveBeenCalled();
+
+      await act(async () => {
+        resolveTokenRead(null);
+        await loginPromise;
+      });
+
+      expect(apiLogin).toHaveBeenCalledWith('testuser', 'password');
+      expect(result.current.isAuthenticated).toBe(true);
+    });
+
     it('should call apiLogin and store session token', async () => {
       (apiLogin as jest.Mock).mockResolvedValue(mockSession);
       (SecureStore.setItemAsync as jest.Mock).mockResolvedValue(undefined);
@@ -137,6 +168,26 @@ describe('AuthContext', () => {
 
       expect(result.current.isAuthenticated).toBe(true);
       expect(result.current.user?.username).toBe('testuser');
+    });
+
+    it('should authenticate without persisting session when token is not exposed', async () => {
+      (apiLogin as jest.Mock).mockResolvedValue({ ...mockSession, sessionId: null });
+      (SecureStore.deleteItemAsync as jest.Mock).mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      await act(async () => {
+        await result.current.login('testuser', 'password');
+      });
+
+      expect(result.current.isAuthenticated).toBe(true);
+      expect(result.current.user?.username).toBe('testuser');
+      expect(SecureStore.setItemAsync).not.toHaveBeenCalledWith('sessionToken', expect.anything());
+      expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith('sessionToken');
+      expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith('sessionUser');
+      expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith('sessionTimestamp');
     });
 
     it('should propagate login errors', async () => {
