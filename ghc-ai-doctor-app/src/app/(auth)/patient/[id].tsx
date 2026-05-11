@@ -2,9 +2,11 @@ import React from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useClinicalSummary } from '@/hooks/useClinicalSummary';
+import { useMedications } from '@/hooks/useMedications';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { ErrorState } from '@/components/ErrorState';
 import { DemographicsCard } from '@/components/DemographicsCard';
+import { MedicationCard } from '@/components/MedicationCard';
 import { mapErrorToUserMessage } from '@/utils/errorHandler';
 import { Spacing } from '@/theme/spacing';
 
@@ -15,25 +17,48 @@ export default function PatientScreen() {
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const validId = id && id.trim() !== '' ? id : null;
 
-  const { demographics, isLoading, error, mutate } = useClinicalSummary(validId);
+  const {
+    demographics,
+    isLoading: demLoading,
+    error: demError,
+    mutate: demMutate,
+  } = useClinicalSummary(validId);
+  const {
+    medications,
+    isLoading: medLoading,
+    error: medError,
+    mutate: medMutate,
+  } = useMedications(validId);
 
   // Determine what to render (mutually exclusive states)
   const renderContent = () => {
-    if (isLoading) {
+    if (demLoading) {
       return <LoadingSkeleton count={3} />;
     }
 
-    if (error) {
-      const errorMessage = mapErrorToUserMessage(error);
-      return <ErrorState message={errorMessage?.message || 'An error occurred'} onRetry={mutate} />;
+    if (demError) {
+      const errorMessage = mapErrorToUserMessage(demError);
+      return (
+        <ErrorState message={errorMessage?.message || 'An error occurred'} onRetry={demMutate} />
+      );
     }
 
     if (demographics) {
-      return <DemographicsCard demographics={demographics} />;
+      return (
+        <>
+          <DemographicsCard demographics={demographics} />
+          <MedicationCard
+            medications={medications}
+            isLoading={medLoading}
+            error={medError}
+            onRetry={medMutate}
+          />
+        </>
+      );
     }
 
     // Empty state - no loading, no error, no data
-    return <ErrorState message="Patient not found" onRetry={mutate} />;
+    return <ErrorState message="Patient not found" onRetry={demMutate} />;
   };
 
   return (

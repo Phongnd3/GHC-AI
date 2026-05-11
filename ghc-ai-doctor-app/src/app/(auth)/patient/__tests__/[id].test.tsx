@@ -4,7 +4,9 @@ import { Animated } from 'react-native';
 import PatientScreen from '../[id]';
 import { useLocalSearchParams } from 'expo-router';
 import { useClinicalSummary } from '@/hooks/useClinicalSummary';
+import { useMedications } from '@/hooks/useMedications';
 import type { PatientDemographics } from '@/types/patient';
+import type { Medication } from '@/types/clinical';
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: jest.fn(() => ({ id: 'patient-uuid-1' })),
@@ -13,6 +15,10 @@ jest.mock('expo-router', () => ({
 
 jest.mock('@/hooks/useClinicalSummary', () => ({
   useClinicalSummary: jest.fn(),
+}));
+
+jest.mock('@/hooks/useMedications', () => ({
+  useMedications: jest.fn(),
 }));
 
 jest.mock('react-native-paper', () => {
@@ -48,12 +54,26 @@ const mockDemographics: PatientDemographics = {
   gender: 'M',
 };
 
+const mockMedications: Medication[] = [
+  { uuid: 'med-1', drugName: 'Metformin', dosage: '500 mg', frequency: '2x daily' },
+];
+
 const mockMutate = jest.fn();
+
+function setupMedicationsDefault() {
+  (useMedications as jest.Mock).mockReturnValue({
+    medications: undefined,
+    isLoading: true,
+    error: undefined,
+    mutate: mockMutate,
+  });
+}
 
 describe('PatientScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (useLocalSearchParams as jest.Mock).mockReturnValue({ id: 'patient-uuid-1' });
+    setupMedicationsDefault();
   });
 
   it('shows LoadingSkeleton while loading', () => {
@@ -91,6 +111,45 @@ describe('PatientScreen', () => {
     expect(getByText('10002AB')).toBeTruthy();
   });
 
+  it('renders MedicationCard when demographics loaded and medications present', () => {
+    (useClinicalSummary as jest.Mock).mockReturnValue({
+      demographics: mockDemographics,
+      isLoading: false,
+      error: undefined,
+      mutate: mockMutate,
+    });
+    (useMedications as jest.Mock).mockReturnValue({
+      medications: mockMedications,
+      isLoading: false,
+      error: undefined,
+      mutate: mockMutate,
+    });
+    const { getByText } = render(<PatientScreen />);
+    expect(getByText('Metformin 500 mg')).toBeTruthy();
+    expect(getByText('ACTIVE MEDICATIONS')).toBeTruthy();
+  });
+
+  it('renders both cards when demographics loaded (medications may load independently)', () => {
+    (useClinicalSummary as jest.Mock).mockReturnValue({
+      demographics: mockDemographics,
+      isLoading: false,
+      error: undefined,
+      mutate: mockMutate,
+    });
+    // medications still loading — MedicationCard handles its own sub-state
+    (useMedications as jest.Mock).mockReturnValue({
+      medications: undefined,
+      isLoading: true,
+      error: undefined,
+      mutate: mockMutate,
+    });
+    const { getByText } = render(<PatientScreen />);
+    // Demographics still shows
+    expect(getByText('John Smith')).toBeTruthy();
+    // MedicationCard header still shows (it renders within its card even when loading)
+    expect(getByText('ACTIVE MEDICATIONS')).toBeTruthy();
+  });
+
   it('uses patient displayName as screen title when loaded', () => {
     (useClinicalSummary as jest.Mock).mockReturnValue({
       demographics: mockDemographics,
@@ -98,7 +157,6 @@ describe('PatientScreen', () => {
       error: undefined,
       mutate: mockMutate,
     });
-    // Stack.Screen is mocked to null, but we verify useClinicalSummary was called with the id
     render(<PatientScreen />);
     expect(useClinicalSummary).toHaveBeenCalledWith('patient-uuid-1');
   });
@@ -110,7 +168,6 @@ describe('PatientScreen', () => {
       error: undefined,
       mutate: mockMutate,
     });
-    // Just verify it renders without crashing
     expect(() => render(<PatientScreen />)).not.toThrow();
   });
 });

@@ -21,6 +21,7 @@ export const ClinicalColors = {
   info: '#0043ce',
   allergyAlert: '#da1e28',
   medicationInfo: '#0f62fe',
+  medicationSurface: '#E3F2FD',
   vitalsNormal: '#24a148',
   vitalsAbnormal: '#f1c21b',
   emptyState: '#8d8d8d',

@@ -1,6 +1,7 @@
-import { getPatientDemographics } from '../clinical';
+import { getPatientDemographics, getActiveMedications } from '../clinical';
 import { apiClient } from '../client';
 import type { Patient } from '@/types/patient';
+import type { Order } from '@/types/visit';
 
 jest.mock('../client', () => ({
   apiClient: { get: jest.fn() },
@@ -82,5 +83,124 @@ describe('getPatientDemographics', () => {
   it('propagates errors from apiClient', async () => {
     (apiClient.get as jest.Mock).mockRejectedValue(new Error('Network Error'));
     await expect(getPatientDemographics('patient-uuid-1')).rejects.toThrow('Network Error');
+  });
+});
+
+const mockDrugOrder: Order = {
+  uuid: 'order-uuid-1',
+  orderType: { display: 'Drug Order' },
+  drug: { display: 'Metformin' },
+  dose: 500,
+  doseUnits: { display: 'mg' },
+  frequency: { display: '2x daily, with meals' },
+  dateActivated: '2026-01-01T00:00:00Z',
+  voided: false,
+};
+
+const mockDrugOrderMissingDose: Order = {
+  uuid: 'order-uuid-2',
+  orderType: { display: 'Drug Order' },
+  drug: { display: 'Paracetamol' },
+  frequency: { display: 'As needed' },
+  dateActivated: '2026-01-01T00:00:00Z',
+  voided: false,
+};
+
+const mockVoidedOrder: Order = {
+  uuid: 'order-uuid-3',
+  orderType: { display: 'Drug Order' },
+  drug: { display: 'Aspirin' },
+  dose: 100,
+  doseUnits: { display: 'mg' },
+  dateActivated: '2026-01-01T00:00:00Z',
+  voided: true,
+};
+
+const mockNonDrugOrder: Order = {
+  uuid: 'order-uuid-4',
+  orderType: { display: 'Test Order' },
+  drug: { display: 'Blood Panel' },
+  dateActivated: '2026-01-01T00:00:00Z',
+  voided: false,
+};
+
+describe('getActiveMedications', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('calls GET /order with correct params', async () => {
+    (apiClient.get as jest.Mock).mockResolvedValue({ data: { results: [] } });
+    await getActiveMedications('patient-uuid-1');
+    expect(apiClient.get).toHaveBeenCalledWith('/order', {
+      params: { patient: 'patient-uuid-1', careSetting: 'OUTPATIENT', status: 'ACTIVE', v: 'full' },
+    });
+  });
+
+  it('transforms drug orders to Medication[]', async () => {
+    (apiClient.get as jest.Mock).mockResolvedValue({
+      data: { results: [mockDrugOrder] },
+    });
+    const result = await getActiveMedications('patient-uuid-1');
+    expect(result).toEqual([
+      {
+        uuid: 'order-uuid-1',
+        drugName: 'Metformin',
+        dosage: '500 mg',
+        frequency: '2x daily, with meals',
+      },
+    ]);
+  });
+
+  it('filters out voided orders', async () => {
+    (apiClient.get as jest.Mock).mockResolvedValue({
+      data: { results: [mockDrugOrder, mockVoidedOrder] },
+    });
+    const result = await getActiveMedications('patient-uuid-1');
+    expect(result).toHaveLength(1);
+    expect(result[0].uuid).toBe('order-uuid-1');
+  });
+
+  it('filters out non-drug orders', async () => {
+    (apiClient.get as jest.Mock).mockResolvedValue({
+      data: { results: [mockDrugOrder, mockNonDrugOrder] },
+    });
+    const result = await getActiveMedications('patient-uuid-1');
+    expect(result).toHaveLength(1);
+    expect(result[0].uuid).toBe('order-uuid-1');
+  });
+
+  it('returns dosage "N/A" when dose or doseUnits is missing', async () => {
+    (apiClient.get as jest.Mock).mockResolvedValue({
+      data: { results: [mockDrugOrderMissingDose] },
+    });
+    const result = await getActiveMedications('patient-uuid-1');
+    expect(result[0].dosage).toBe('N/A');
+  });
+
+  it('returns frequency "N/A" when frequency is missing', async () => {
+    const orderWithoutFreq: Order = {
+      uuid: 'order-uuid-5',
+      orderType: { display: 'Drug Order' },
+      drug: { display: 'Ibuprofen' },
+      dose: 200,
+      doseUnits: { display: 'mg' },
+      dateActivated: '2026-01-01T00:00:00Z',
+      voided: false,
+    };
+    (apiClient.get as jest.Mock).mockResolvedValue({
+      data: { results: [orderWithoutFreq] },
+    });
+    const result = await getActiveMedications('patient-uuid-1');
+    expect(result[0].frequency).toBe('N/A');
+  });
+
+  it('handles empty results', async () => {
+    (apiClient.get as jest.Mock).mockResolvedValue({ data: { results: [] } });
+    const result = await getActiveMedications('patient-uuid-1');
+    expect(result).toEqual([]);
+  });
+
+  it('propagates apiClient errors', async () => {
+    (apiClient.get as jest.Mock).mockRejectedValue(new Error('Network Error'));
+    await expect(getActiveMedications('patient-uuid-1')).rejects.toThrow('Network Error');
   });
 });
