@@ -53,6 +53,7 @@ module.exports = {
       cacheDuration: parseInt(process.env.CACHE_DURATION || '300000', 10),
       requestTimeout: parseInt(process.env.REQUEST_TIMEOUT || '10000', 10),
       appEnv: process.env.APP_ENV || 'development',
+      enableScreenCaptureProtection: process.env.ENABLE_SCREEN_CAPTURE_PROTECTION?.toLowerCase() !== 'false',
     },
   },
 };

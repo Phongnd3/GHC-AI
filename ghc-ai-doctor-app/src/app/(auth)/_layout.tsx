@@ -4,6 +4,7 @@ import { Stack, router, useNavigationContainerRef } from 'expo-router';
 import { preventScreenCaptureAsync, allowScreenCaptureAsync } from 'expo-screen-capture';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSkeleton } from '@/components';
+import { ENABLE_SCREEN_CAPTURE_PROTECTION } from '@/config/env';
 
 /**
  * Protected route layout for authenticated screens.
@@ -20,8 +21,9 @@ export default function AuthLayout() {
   // isAuthenticated is true — avoids setting it during the unauthenticated/loading
   // render window before the redirect fires.
   // The login screen is outside (auth)/ so it is naturally excluded.
+  // Toggle via ENABLE_SCREEN_CAPTURE_PROTECTION env var (e.g. for demo purposes).
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && ENABLE_SCREEN_CAPTURE_PROTECTION) {
       preventScreenCaptureAsync();
       return () => {
         allowScreenCaptureAsync();

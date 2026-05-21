@@ -6,6 +6,7 @@ interface EnvironmentConfig {
   cacheDuration: number;
   requestTimeout: number;
   appEnv: 'development' | 'staging' | 'production';
+  enableScreenCaptureProtection: boolean;
 }
 
 function getEnvironmentConfig(): EnvironmentConfig {
@@ -21,6 +22,7 @@ function getEnvironmentConfig(): EnvironmentConfig {
     cacheDuration: extra.cacheDuration || 300000,
     requestTimeout: extra.requestTimeout || 10000,
     appEnv: extra.appEnv || 'development',
+    enableScreenCaptureProtection: extra.enableScreenCaptureProtection !== false,
   };
 }
 
@@ -40,3 +42,6 @@ export const REQUEST_TIMEOUT = ENV.requestTimeout;
 
 /** Current app environment */
 export const APP_ENV = ENV.appEnv;
+
+/** Enable FLAG_SECURE screen capture protection on authenticated screens */
+export const ENABLE_SCREEN_CAPTURE_PROTECTION = ENV.enableScreenCaptureProtection;
