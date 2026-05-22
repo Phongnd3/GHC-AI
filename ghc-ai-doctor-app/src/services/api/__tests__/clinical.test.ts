@@ -1,4 +1,4 @@
-import { getPatientDemographics, getActiveMedications } from '../clinical';
+import { getPatientDemographics, getActiveMedications, getAllergies } from '../clinical';
 import { apiClient } from '../client';
 import type { Patient } from '@/types/patient';
 import type { Order } from '@/types/visit';
@@ -202,5 +202,89 @@ describe('getActiveMedications', () => {
   it('propagates apiClient errors', async () => {
     (apiClient.get as jest.Mock).mockRejectedValue(new Error('Network Error'));
     await expect(getActiveMedications('patient-uuid-1')).rejects.toThrow('Network Error');
+  });
+});
+
+const mockAllergyResponse = {
+  uuid: 'allergy-uuid-1',
+  allergen: { display: 'Penicillin', allergenType: 'DRUG' },
+  severity: { display: 'Severe' },
+  reactions: [{ reaction: { display: 'Anaphylaxis' } }],
+  comment: 'Patient carries EpiPen',
+};
+
+const mockAllergyNoSeverity = {
+  uuid: 'allergy-uuid-2',
+  allergen: { display: 'Sulfa drugs', allergenType: 'DRUG' },
+  severity: null,
+  reactions: [{ reaction: { display: 'Rash' } }],
+};
+
+const mockAllergyNullAllergen = {
+  uuid: 'allergy-uuid-3',
+  allergen: undefined,
+  severity: { display: 'Moderate' },
+  reactions: [],
+};
+
+describe('getAllergies', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('calls GET /patient/{uuid}/allergy', async () => {
+    (apiClient.get as jest.Mock).mockResolvedValue({ data: { results: [] } });
+    await getAllergies('patient-uuid-1');
+    expect(apiClient.get).toHaveBeenCalledWith('/patient/patient-uuid-1/allergy');
+  });
+
+  it('transforms allergy responses to Allergy[]', async () => {
+    (apiClient.get as jest.Mock).mockResolvedValue({
+      data: { results: [mockAllergyResponse] },
+    });
+    const result = await getAllergies('patient-uuid-1');
+    expect(result).toEqual([
+      {
+        uuid: 'allergy-uuid-1',
+        allergenDisplay: 'Penicillin',
+        allergenType: 'DRUG',
+        severity: 'Severe',
+        reactions: ['Anaphylaxis'],
+        comment: 'Patient carries EpiPen',
+      },
+    ]);
+  });
+
+  it('handles null severity', async () => {
+    (apiClient.get as jest.Mock).mockResolvedValue({
+      data: { results: [mockAllergyNoSeverity] },
+    });
+    const result = await getAllergies('patient-uuid-1');
+    expect(result[0].severity).toBeNull();
+  });
+
+  it('handles empty reactions', async () => {
+    (apiClient.get as jest.Mock).mockResolvedValue({
+      data: { results: [mockAllergyNullAllergen] },
+    });
+    const result = await getAllergies('patient-uuid-1');
+    expect(result[0].reactions).toEqual([]);
+  });
+
+  it('falls back to Unknown allergen when allergen is null', async () => {
+    (apiClient.get as jest.Mock).mockResolvedValue({
+      data: { results: [mockAllergyNullAllergen] },
+    });
+    const result = await getAllergies('patient-uuid-1');
+    expect(result[0].allergenDisplay).toBe('Unknown allergen');
+  });
+
+  it('handles empty results', async () => {
+    (apiClient.get as jest.Mock).mockResolvedValue({ data: { results: [] } });
+    const result = await getAllergies('patient-uuid-1');
+    expect(result).toEqual([]);
+  });
+
+  it('propagates apiClient errors', async () => {
+    (apiClient.get as jest.Mock).mockRejectedValue(new Error('Network Error'));
+    await expect(getAllergies('patient-uuid-1')).rejects.toThrow('Network Error');
   });
 });

@@ -5,8 +5,10 @@ import PatientScreen from '../[id]';
 import { useLocalSearchParams } from 'expo-router';
 import { useClinicalSummary } from '@/hooks/useClinicalSummary';
 import { useMedications } from '@/hooks/useMedications';
+import { useAllergies } from '@/hooks/useAllergies';
 import type { PatientDemographics } from '@/types/patient';
 import type { Medication } from '@/types/clinical';
+import type { Allergy } from '@/types/clinical';
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: jest.fn(() => ({ id: 'patient-uuid-1' })),
@@ -19,6 +21,10 @@ jest.mock('@/hooks/useClinicalSummary', () => ({
 
 jest.mock('@/hooks/useMedications', () => ({
   useMedications: jest.fn(),
+}));
+
+jest.mock('@/hooks/useAllergies', () => ({
+  useAllergies: jest.fn(),
 }));
 
 jest.mock('react-native-paper', () => {
@@ -58,6 +64,16 @@ const mockMedications: Medication[] = [
   { uuid: 'med-1', drugName: 'Metformin', dosage: '500 mg', frequency: '2x daily' },
 ];
 
+const mockAllergies: Allergy[] = [
+  {
+    uuid: 'all-1',
+    allergenDisplay: 'Penicillin',
+    allergenType: 'DRUG',
+    severity: 'Severe',
+    reactions: ['Anaphylaxis'],
+  },
+];
+
 const mockMutate = jest.fn();
 
 function setupMedicationsDefault() {
@@ -69,11 +85,21 @@ function setupMedicationsDefault() {
   });
 }
 
+function setupAllergiesDefault() {
+  (useAllergies as jest.Mock).mockReturnValue({
+    allergies: undefined,
+    isLoading: true,
+    error: undefined,
+    mutate: mockMutate,
+  });
+}
+
 describe('PatientScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (useLocalSearchParams as jest.Mock).mockReturnValue({ id: 'patient-uuid-1' });
     setupMedicationsDefault();
+    setupAllergiesDefault();
   });
 
   it('shows LoadingSkeleton while loading', () => {
@@ -127,6 +153,30 @@ describe('PatientScreen', () => {
     const { getByText } = render(<PatientScreen />);
     expect(getByText('Metformin 500 mg')).toBeTruthy();
     expect(getByText('ACTIVE MEDICATIONS')).toBeTruthy();
+  });
+
+  it('renders AllergiesCard when demographics loaded and allergies present', () => {
+    (useClinicalSummary as jest.Mock).mockReturnValue({
+      demographics: mockDemographics,
+      isLoading: false,
+      error: undefined,
+      mutate: mockMutate,
+    });
+    (useMedications as jest.Mock).mockReturnValue({
+      medications: mockMedications,
+      isLoading: false,
+      error: undefined,
+      mutate: mockMutate,
+    });
+    (useAllergies as jest.Mock).mockReturnValue({
+      allergies: mockAllergies,
+      isLoading: false,
+      error: undefined,
+      mutate: mockMutate,
+    });
+    const { getByText } = render(<PatientScreen />);
+    expect(getByText('Penicillin (Severe)')).toBeTruthy();
+    expect(getByText('ALLERGIES')).toBeTruthy();
   });
 
   it('renders both cards when demographics loaded (medications may load independently)', () => {

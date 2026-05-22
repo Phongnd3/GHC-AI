@@ -1,3 +1,3 @@
 export type { Patient, PatientName, PatientIdentifier, FilteredPatientData } from './patient';
 export type { Visit, Encounter, EncounterProvider, Observation, Order } from './visit';
-export type { Medication } from './clinical';
+export type { Medication, Allergy } from './clinical';
