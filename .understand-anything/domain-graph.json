@@ -1,0 +1,1014 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "@openmrs/esm-patient-management",
+    "languages": ["TypeScript", "JavaScript", "CSS", "MD", "YAML", "JSON", "Shell", "Dockerfile"],
+    "frameworks": ["React", "OpenMRS", "i18next", "SWR", "Carbon Design System"],
+    "description": "Patient management microfrontend for the OpenMRS 3.x frontend",
+    "analyzedAt": "2026-06-03T05:58:34.994Z",
+    "gitCommitHash": "5d2596e1a96c03b8a86b39b3373f55f02c0f9508"
+  },
+  "nodes": [
+    {
+      "id": "domain:service-queues",
+      "type": "domain",
+      "name": "Service Queues",
+      "summary": "Patient queue management including adding patients to queues, transition between queues and statuses, queue screen display, queue linelist tables, and queue administration. Covers the full lifecycle of a queue entry from creation through service completion.",
+      "tags": ["openmrs", "patient-management", "service-queues", "waitlist"],
+      "complexity": "complex",
+      "domainMeta": {
+        "entities": ["QueueEntry", "Queue", "QueueRoom", "VisitQueueEntry", "QueueEntryStatus", "QueueEntryPriority", "QueueService", "QueueLocation"],
+        "businessRules": ["A visit is required before a patient can be added to a queue", "Queue entry transitions create a history trail via the transition API", "A queue entry can only be transitioned (ended + new started), not modified in place", "Duplicate queue entries for the same patient in the same queue are prevented", "Queue entry start time must not be prior to the previous queue entry's start time", "Queue entry start time must not be in the future"],
+        "crossDomainInteractions": ["Patients searched from Patient Search domain are added to queues", "Queue entries reference patient visits from Active Visits domain", "Patient banner shows queue entry status with priority indicator"]
+      }
+    },
+    {
+      "id": "flow:add-patient-to-queue",
+      "type": "flow",
+      "name": "Add Patient to Queue",
+      "summary": "Searches for a patient, verifies they have an active visit, selects the queue service/location/priority, and creates a queue entry",
+      "tags": ["openmrs", "service-queues", "queue-entry", "creation"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "POST /ws/rest/v1/visit-queue-entry",
+        "entryType": "http"
+      }
+    },
+    {
+      "id": "flow:transition-queue-entry",
+      "type": "flow",
+      "name": "Transition Queue Entry",
+      "summary": "Moves a queue entry to a new queue, status, or priority via the transition API which ends the current entry and creates a new one with updated values. Includes undo capability.",
+      "tags": ["openmrs", "service-queues", "queue-entry", "transition", "status-change"],
+      "complexity": "complex",
+      "domainMeta": {
+        "entryPoint": "POST /ws/rest/v1/queue-entry/transition",
+        "entryType": "http"
+      }
+    },
+    {
+      "id": "flow:serve-queue-entry",
+      "type": "flow",
+      "name": "Serve Queue Entry",
+      "summary": "Marks a queue entry as being served by calling the patient to the service point, displayed as an active ticket on the queue screen with blinking status",
+      "tags": ["openmrs", "service-queues", "queue-screen", "call-to-service"],
+      "complexity": "simple",
+      "domainMeta": {
+        "entryPoint": "POST /ws/rest/v1/queueutil/assignticket",
+        "entryType": "http"
+      }
+    },
+    {
+      "id": "flow:administer-queues",
+      "type": "flow",
+      "name": "Administer Queues and Rooms",
+      "summary": "CRUD operations for managing queues and queue rooms, including creating, editing, retiring/deleting queues and queue rooms via the admin panel",
+      "tags": ["openmrs", "service-queues", "admin", "crud"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "UI admin panel",
+        "entryType": "manual"
+      }
+    },
+    {
+      "id": "flow:manage-queue-linelists",
+      "type": "flow",
+      "name": "Manage Queue Linelists",
+      "summary": "Displays patient linelist tables per queue service with search, pagination, filtering, and action menus for queue entry operations",
+      "tags": ["openmrs", "service-queues", "linelist", "table"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "Route navigation to queue service table view",
+        "entryType": "manual"
+      }
+    },
+    {
+      "id": "flow:view-queue-metrics",
+      "type": "flow",
+      "name": "View Queue Metrics",
+      "summary": "Displays checked-in patient counts, waiting patients, average wait time, and per-service metrics for queue monitoring",
+      "tags": ["openmrs", "service-queues", "metrics", "dashboard"],
+      "complexity": "simple",
+      "domainMeta": {
+        "entryPoint": "GET /ws/rest/v1/queue-entry-metrics",
+        "entryType": "http"
+      }
+    },
+    {
+      "id": "step:add-patient-to-queue:open-create-queue-entry-workspace",
+      "type": "step",
+      "name": "Open Create Queue Entry Workspace",
+      "summary": "User clicks 'Add patient to queue' action, opening a workspace with patient search results",
+      "tags": ["openmrs", "service-queues", "workspace"],
+      "complexity": "simple",
+      "filePath": "packages/esm-service-queues-app/src/create-queue-entry/create-queue-entry.workspace.tsx",
+      "lineRange": [31, 122]
+    },
+    {
+      "id": "step:add-patient-to-queue:select-patient-and-verify-visit",
+      "type": "step",
+      "name": "Select Patient and Verify Active Visit",
+      "summary": "Patient banner is displayed showing patient details. The system verifies the patient has an active visit; if no active visit exists, a 'start visit' extension is shown as a prerequisite",
+      "tags": ["openmrs", "service-queues", "patient", "visit"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-service-queues-app/src/create-queue-entry/create-queue-entry.workspace.tsx",
+      "lineRange": [46, 116]
+    },
+    {
+      "id": "step:add-patient-to-queue:fill-queue-fields",
+      "type": "step",
+      "name": "Fill Queue Fields with Service, Priority, Status",
+      "summary": "User selects queue service location, priority level, and status from configured options via radio buttons or combobox. Priority comment can be added",
+      "tags": ["openmrs", "service-queues", "queue-fields", "form"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-service-queues-app/src/create-queue-entry/queue-fields/queue-fields.component.tsx",
+      "lineRange": [1, 200]
+    },
+    {
+      "id": "step:add-patient-to-queue:submit-queue-entry",
+      "type": "step",
+      "name": "Submit Queue Entry via REST API",
+      "summary": "POST request to /visit-queue-entry with visit UUID, queue UUID, priority, status, and patient UUID to create the queue entry",
+      "tags": ["openmrs", "service-queues", "api", "rest"],
+      "complexity": "simple",
+      "filePath": "packages/esm-service-queues-app/src/service-queues.resource.ts",
+      "lineRange": [107, 150]
+    },
+    {
+      "id": "step:add-patient-to-queue:handle-existing-visit",
+      "type": "step",
+      "name": "Handle Existing Visit Form",
+      "summary": "If patient already has an active visit, presents the existing visit form that allows proceeding directly with queue entry creation using the existing visit",
+      "tags": ["openmrs", "service-queues", "visit", "form"],
+      "complexity": "simple",
+      "filePath": "packages/esm-service-queues-app/src/create-queue-entry/existing-visit-form/existing-visit-form.component.tsx",
+      "lineRange": [1, 100]
+    },
+    {
+      "id": "step:transition-queue-entry:open-queue-entry-actions-modal",
+      "type": "step",
+      "name": "Open Queue Entry Action Modal",
+      "summary": "User triggers a queue entry action (edit, move, transition) which opens a shared modal component with form fields for the operation",
+      "tags": ["openmrs", "service-queues", "modal"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-service-queues-app/src/modals/queue-entry-actions-modal.component.tsx",
+      "lineRange": [90, 489]
+    },
+    {
+      "id": "step:transition-queue-entry:select-new-queue-and-status",
+      "type": "step",
+      "name": "Select New Queue, Status, Priority and Transition Time",
+      "summary": "User picks the target queue, new status, priority level, optional priority comment, and optionally modifies the transition date/time with validation",
+      "tags": ["openmrs", "service-queues", "transition", "form"],
+      "complexity": "complex",
+      "filePath": "packages/esm-service-queues-app/src/modals/queue-entry-actions-modal.component.tsx",
+      "lineRange": [131, 456]
+    },
+    {
+      "id": "step:transition-queue-entry:call-transition-api",
+      "type": "step",
+      "name": "Call Queue Entry Transition API",
+      "summary": "Sends a POST request to /queue-entry/transition ending the current queue entry and creating a new one with updated queue, status, or priority values",
+      "tags": ["openmrs", "service-queues", "api", "rest", "transition"],
+      "complexity": "simple",
+      "filePath": "packages/esm-service-queues-app/src/modals/queue-entry-actions.resource.ts",
+      "lineRange": [23, 35]
+    },
+    {
+      "id": "step:transition-queue-entry:handle-transition-errors",
+      "type": "step",
+      "name": "Handle Transition Errors and Refresh",
+      "summary": "Handles duplicate queue entry errors, already-ended queue entry warnings, and other submission errors with appropriate snackbar notifications. Mutates SWR cache to refresh queue data",
+      "tags": ["openmrs", "service-queues", "error-handling"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-service-queues-app/src/modals/queue-entry-actions-modal.component.tsx",
+      "lineRange": [191, 238]
+    },
+    {
+      "id": "step:transition-queue-entry:undo-transition",
+      "type": "step",
+      "name": "Undo Queue Entry Transition",
+      "summary": "Sends a DELETE request to /queue-entry/transition to revert the most recent transition, restoring the previous queue entry state",
+      "tags": ["openmrs", "service-queues", "api", "rest", "undo"],
+      "complexity": "simple",
+      "filePath": "packages/esm-service-queues-app/src/modals/queue-entry-actions.resource.ts",
+      "lineRange": [67, 76]
+    },
+    {
+      "id": "step:serve-queue-entry:call-patient-to-service-point",
+      "type": "step",
+      "name": "Call Patient to Service Point",
+      "summary": "Posts to /queueutil/assignticket with service point name, ticket number, and status to mark a ticket as being served",
+      "tags": ["openmrs", "service-queues", "queue-screen", "serve"],
+      "complexity": "simple",
+      "filePath": "packages/esm-service-queues-app/src/service-queues.resource.ts",
+      "lineRange": [193, 208]
+    },
+    {
+      "id": "step:serve-queue-entry:display-active-tickets",
+      "type": "step",
+      "name": "Display Active Tickets on Queue Screen",
+      "summary": "Fetches active tickets with 3-second polling and displays them as cards showing ticket number, room, and blinking call status",
+      "tags": ["openmrs", "service-queues", "queue-screen", "display"],
+      "complexity": "simple",
+      "filePath": "packages/esm-service-queues-app/src/queue-screen/queue-screen.component.tsx",
+      "lineRange": [9, 53]
+    },
+    {
+      "id": "step:administer-queues:create-edit-queues",
+      "type": "step",
+      "name": "Create and Edit Queues",
+      "summary": "Admin panel for adding or editing queue definitions including service type, location, allowed priorities, and allowed statuses",
+      "tags": ["openmrs", "service-queues", "admin", "queue"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-service-queues-app/src/admin/queues",
+      "lineRange": [0, 0]
+    },
+    {
+      "id": "step:administer-queues:create-edit-queue-rooms",
+      "type": "step",
+      "name": "Create and Edit Queue Rooms",
+      "summary": "Admin panel for managing queue rooms with add, edit, and delete operations via forms and confirmation modals",
+      "tags": ["openmrs", "service-queues", "admin", "queue-room"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-service-queues-app/src/admin/queue-rooms",
+      "lineRange": [0, 0]
+    },
+    {
+      "id": "step:administer-queues:retire-queues-and-rooms",
+      "type": "step",
+      "name": "Retire Queues and Queue Rooms",
+      "summary": "Confirmation modals for retiring/deleting queues and queue rooms with loading states and error handling",
+      "tags": ["openmrs", "service-queues", "admin", "delete"],
+      "complexity": "simple",
+      "filePath": "packages/esm-service-queues-app/src/admin/modals",
+      "lineRange": [0, 0]
+    },
+    {
+      "id": "step:manage-queue-linelists:view-linelist-table",
+      "type": "step",
+      "name": "View and Filter Queue Linelist",
+      "summary": "Renders a reusable patient linelist table for a queue service with search, pagination, column sorting, and row-level actions",
+      "tags": ["openmrs", "service-queues", "linelist", "table"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-service-queues-app/src/queue-patient-linelists/queue-linelist-base-table.component.tsx",
+      "lineRange": [1, 237]
+    },
+    {
+      "id": "step:manage-queue-linelists:execute-queue-entry-actions",
+      "type": "step",
+      "name": "Execute Queue Entry Actions from Linelist",
+      "summary": "Provides overflow menu on each linelist row with actions: call/serve, requeue, undo transition, void, edit, and clear all entries",
+      "tags": ["openmrs", "service-queues", "actions", "menu"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-service-queues-app/src/modals/queue-entry-actions-modal.component.tsx",
+      "lineRange": [1, 50]
+    },
+    {
+      "id": "step:view-queue-metrics:display-metrics-cards",
+      "type": "step",
+      "name": "Display Queue Metrics Cards",
+      "summary": "Shows metrics cards with checked-in patient counts, average wait time, and service-specific statistics using SWR data fetching",
+      "tags": ["openmrs", "service-queues", "metrics", "dashboard"],
+      "complexity": "simple",
+      "filePath": "packages/esm-service-queues-app/src/metrics/metrics-container.component.tsx",
+      "lineRange": [1, 50]
+    },
+    {
+      "id": "domain:appointments",
+      "type": "domain",
+      "name": "Appointments",
+      "summary": "Appointment scheduling and management including form-based creation/editing of appointments, calendar views, workload management, scheduled and unscheduled appointment lists, and patient appointment history.",
+      "tags": ["openmrs", "patient-management", "appointments", "scheduling"],
+      "complexity": "complex",
+      "domainMeta": {
+        "entities": ["Appointment", "AppointmentPayload", "RecurringPattern", "AppointmentService", "Provider", "AppointmentLocation"],
+        "businessRules": ["Appointment conflicts must be checked before saving", "Appointments can be scheduled or unscheduled", "Recurring appointment patterns can be defined"],
+        "crossDomainInteractions": ["Patient registration provides patient data for appointment scheduling", "Appointments appear on the home page dashboard via Appointment domain", "Appointment metrics are displayed on the home page"]
+      }
+    },
+    {
+      "id": "flow:create-or-edit-appointment",
+      "type": "flow",
+      "name": "Create or Edit Appointment",
+      "summary": "Form-based appointment creation and editing with service selection, date/time picking, provider assignment, recurring patterns, and conflict checking",
+      "tags": ["openmrs", "appointments", "form", "scheduling"],
+      "complexity": "complex",
+      "domainMeta": {
+        "entryPoint": "UI appointments form workspace",
+        "entryType": "manual"
+      }
+    },
+    {
+      "id": "flow:view-appointments-calendar",
+      "type": "flow",
+      "name": "View Appointments Calendar",
+      "summary": "Monthly calendar view of appointments with navigation between months and visualization of scheduled appointments per day",
+      "tags": ["openmrs", "appointments", "calendar", "view"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "Route navigation to calendar view",
+        "entryType": "manual"
+      }
+    },
+    {
+      "id": "flow:manage-appointment-workload",
+      "type": "flow",
+      "name": "Manage Appointment Workload",
+      "summary": "Monthly workload view showing provider appointment counts and capacity across services with visual workload indicators",
+      "tags": ["openmrs", "appointments", "workload", "provider"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "Route navigation to workload view",
+        "entryType": "manual"
+      }
+    },
+    {
+      "id": "flow:view-patient-appointments",
+      "type": "flow",
+      "name": "View Patient Appointment History",
+      "summary": "Displays a patient's appointment history including past and upcoming appointments with details and cancellation options",
+      "tags": ["openmrs", "appointments", "patient", "history"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "Patient chart appointments extension",
+        "entryType": "manual"
+      }
+    },
+    {
+      "id": "step:create-or-edit-appointment:fill-appointment-form",
+      "type": "step",
+      "name": "Fill Appointment Form",
+      "summary": "User fills in appointment details: service type, date, time, provider, location, notes, and optional recurring pattern using react-hook-form with Zod validation",
+      "tags": ["openmrs", "appointments", "form"],
+      "complexity": "complex",
+      "filePath": "packages/esm-appointments-app/src/form/appointments-form.workspace.tsx",
+      "lineRange": [66, 400]
+    },
+    {
+      "id": "step:create-or-edit-appointment:check-conflicts",
+      "type": "step",
+      "name": "Check for Appointment Conflicts",
+      "summary": "Validates proposed appointment time against existing appointments to detect scheduling conflicts before save",
+      "tags": ["openmrs", "appointments", "validation", "conflict"],
+      "complexity": "simple",
+      "filePath": "packages/esm-appointments-app/src/form/appointments-form.resource.ts",
+      "lineRange": [1, 50]
+    },
+    {
+      "id": "step:create-or-edit-appointment:save-appointment",
+      "type": "step",
+      "name": "Save Appointment via REST API",
+      "summary": "Posts the appointment payload to the server, handling both single and recurring appointments, then refreshes the appointment list",
+      "tags": ["openmrs", "appointments", "api", "rest"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-appointments-app/src/form/appointments-form.resource.ts",
+      "lineRange": [50, 120]
+    },
+    {
+      "id": "step:create-or-edit-appointment:cancel-appointment",
+      "type": "step",
+      "name": "Cancel Existing Appointment",
+      "summary": "Open cancel modal for an existing appointment, confirm cancellation, and update the appointment status",
+      "tags": ["openmrs", "appointments", "cancel"],
+      "complexity": "simple",
+      "filePath": "packages/esm-appointments-app/src/patient-appointments/patient-appointments-cancel.modal.tsx",
+      "lineRange": [1, 80]
+    },
+    {
+      "id": "step:view-appointments-calendar:navigate-monthly-view",
+      "type": "step",
+      "name": "Navigate Monthly Calendar View",
+      "summary": "Renders a monthly calendar grid with appointment indicators, month navigation, and service type filtering",
+      "tags": ["openmrs", "appointments", "calendar"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-appointments-app/src/calendar/appointments-calendar-view.component.tsx",
+      "lineRange": [1, 120]
+    },
+    {
+      "id": "step:manage-appointment-workload:view-workload-by-month",
+      "type": "step",
+      "name": "View Monthly Provider Workload",
+      "summary": "Displays workload cards for each service with appointment counts per provider, capacity tracking, and visual overload indicators",
+      "tags": ["openmrs", "appointments", "workload"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-appointments-app/src/workload/workload.component.tsx",
+      "lineRange": [1, 100]
+    },
+    {
+      "id": "domain:active-visits",
+      "type": "domain",
+      "name": "Active Visits",
+      "summary": "Tracking and display of currently active patient visits with configurable data columns, visit summary details including encounters, medications, notes, and vital signs. Provides home page metrics tiles for active visit counts.",
+      "tags": ["openmrs", "patient-management", "active-visits", "visit-tracking"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entities": ["ActiveVisit", "Visit", "Encounter", "Obs"],
+        "businessRules": ["Active visits are filtered by session location", "Visit data includes configurable identifier and attribute columns", "Visit summaries include encounters, diagnoses, vitals, medications and notes"],
+        "crossDomainInteractions": ["Queue entries are associated with active visits from this domain", "Active visit counts appear on the home page dashboard tiles"]
+      }
+    },
+    {
+      "id": "flow:view-active-visits-table",
+      "type": "flow",
+      "name": "View Active Visits Table",
+      "summary": "Displays a paginated, sortable table of currently active visits at the user's session location with configurable identifier, attribute, and observation columns",
+      "tags": ["openmrs", "active-visits", "table", "view"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "Route navigation to active visits widget",
+        "entryType": "manual"
+      }
+    },
+    {
+      "id": "flow:view-visit-summary",
+      "type": "flow",
+      "name": "View Visit Summary",
+      "summary": "Displays detailed visit summary with encounters, diagnoses, medications, notes, vitals, and test results in organized tabbed views",
+      "tags": ["openmrs", "active-visits", "visit-summary"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "Click on a visit in the active visits table",
+        "entryType": "manual"
+      }
+    },
+    {
+      "id": "step:view-active-visits-table:fetch-active-visits",
+      "type": "step",
+      "name": "Fetch Active Visits from API",
+      "summary": "Uses SWR infinite query to fetch active visits with custom representation including patient identifiers, person attributes, and flattened observation data",
+      "tags": ["openmrs", "active-visits", "api"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-active-visits-app/src/active-visits-widget/active-visits.resource.ts",
+      "lineRange": [24, 150]
+    },
+    {
+      "id": "step:view-active-visits-table:render-sortable-table",
+      "type": "step",
+      "name": "Render Sortable Active Visits Table",
+      "summary": "Renders a data table with configurable columns for identifiers, attributes, observations, name, gender, age, visit type, and visit time with sort functionality",
+      "tags": ["openmrs", "active-visits", "table"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-active-visits-app/src/active-visits-widget/active-visits.component.tsx",
+      "lineRange": [1, 150]
+    },
+    {
+      "id": "step:view-visit-summary:display-encounters-and-details",
+      "type": "step",
+      "name": "Display Visit Encounters and Details",
+      "summary": "Renders visit detail overview with encounter list, diagnosis display, medication administration, clinical notes, and vitals in organized sections",
+      "tags": ["openmrs", "active-visits", "visit-summary", "encounters"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-active-visits-app/src/visits-summary/visit-detail.component.tsx",
+      "lineRange": [1, 150]
+    },
+    {
+      "id": "domain:patient-registration",
+      "type": "domain",
+      "name": "Patient Registration",
+      "summary": "Patient registration workflow including creation of new patients and editing existing patient records. Covers form fields for name, demographics, address, identifiers, relationships, death info, and patient photo capture.",
+      "tags": ["openmrs", "patient-management", "registration"],
+      "complexity": "complex",
+      "domainMeta": {
+        "entities": ["Patient", "PersonName", "PatientIdentifier", "PersonAddress", "PersonAttribute", "Relationship", "PatientPhoto"],
+        "businessRules": ["Patient identifiers must be unique and validated against identifier types", "Registration can be done online or offline with queued synchronization", "Form validation uses configurable validation schemas per field type", "Address fields have hierarchical dependencies"],
+        "crossDomainInteractions": ["Registered patients become searchable via the Patient Search domain", "Patient banner in Patient Search displays registration data"]
+      }
+    },
+    {
+      "id": "flow:register-new-patient",
+      "type": "flow",
+      "name": "Register New Patient",
+      "summary": "Creates a new patient record by filling out registration sections (name, demographics, address, identifiers, relationships), capturing a photo, and submitting via Formik-managed form with validation",
+      "tags": ["openmrs", "patient-registration", "create"],
+      "complexity": "complex",
+      "domainMeta": {
+        "entryPoint": "Route navigation to registration form or 'Add Patient' link",
+        "entryType": "manual"
+      }
+    },
+    {
+      "id": "flow:edit-existing-patient",
+      "type": "flow",
+      "name": "Edit Existing Patient",
+      "summary": "Loads an existing patient's data into the registration form, allowing updates to demographics, address, identifiers, relationships, and other configurable sections",
+      "tags": ["openmrs", "patient-registration", "edit"],
+      "complexity": "complex",
+      "domainMeta": {
+        "entryPoint": "Route navigation to registration form with patient UUID parameter",
+        "entryType": "manual"
+      }
+    },
+    {
+      "id": "step:register-new-patient:fill-registration-sections",
+      "type": "step",
+      "name": "Fill Registration Sections",
+      "summary": "User completes configurable sections: demographics (name, gender, DOB), address, identifier, relationships, and death info using field components for each data type",
+      "tags": ["openmrs", "patient-registration", "form"],
+      "complexity": "complex",
+      "filePath": "packages/esm-patient-registration-app/src/patient-registration/patient-registration.component.tsx",
+      "lineRange": [36, 150]
+    },
+    {
+      "id": "step:register-new-patient:validate-form",
+      "type": "step",
+      "name": "Validate Registration Form",
+      "summary": "Applies validation schemas per field including required fields, date formats, identifier patterns, and cross-field validations",
+      "tags": ["openmrs", "patient-registration", "validation"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-patient-registration-app/src/patient-registration/validation/patient-registration-validation.ts",
+      "lineRange": [1, 100]
+    },
+    {
+      "id": "step:register-new-patient:submit-patient-to-api",
+      "type": "step",
+      "name": "Submit Patient via Save Patient Transaction Manager",
+      "summary": "Executes a transaction manager that creates patient, person name, identifiers, address, attributes, relationships, encounters, and photo via REST API calls",
+      "tags": ["openmrs", "patient-registration", "api"],
+      "complexity": "complex",
+      "filePath": "packages/esm-patient-registration-app/src/patient-registration/form-manager.ts",
+      "lineRange": [56, 200]
+    },
+    {
+      "id": "step:register-new-patient:handle-offline-sync",
+      "type": "step",
+      "name": "Handle Offline Registration",
+      "summary": "When offline, serializes the patient registration as a sync item for later synchronization to the server",
+      "tags": ["openmrs", "patient-registration", "offline"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-patient-registration-app/src/patient-registration/form-manager.ts",
+      "lineRange": [57, 120]
+    },
+    {
+      "id": "domain:patient-search",
+      "type": "domain",
+      "name": "Patient Search",
+      "summary": "Patient search functionality with compact search bar, advanced search page with filters, patient banner display with contact details, and start-visit workflow. Supports searching by name, identifier, or advanced criteria.",
+      "tags": ["openmrs", "patient-management", "search"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entities": ["Patient", "PatientSearchResult"],
+        "businessRules": ["Search uses configured search API with custom representation", "Patient banner can show queue status from Service Queues domain"],
+        "crossDomainInteractions": ["Patient search results can launch registration edit flow", "Patient search is the entry point for adding patients to queues", "Search results display patient banner from this domain"]
+      }
+    },
+    {
+      "id": "flow:search-for-patient",
+      "type": "flow",
+      "name": "Search for Patient",
+      "summary": "Initiates a patient search via compact search bar or advanced search page with filters, displaying results with patient banner and contact details",
+      "tags": ["openmrs", "patient-search", "search"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "Search bar or advanced search page route",
+        "entryType": "manual"
+      }
+    },
+    {
+      "id": "step:search-for-patient:enter-search-query",
+      "type": "step",
+      "name": "Enter Search Query",
+      "summary": "User types a patient name or identifier into the search bar, triggering real-time autocomplete search results",
+      "tags": ["openmrs", "patient-search", "search-bar"],
+      "complexity": "simple",
+      "filePath": "packages/esm-patient-search-app/src/patient-search-bar",
+      "lineRange": [0, 0]
+    },
+    {
+      "id": "step:search-for-patient:view-advanced-search-results",
+      "type": "step",
+      "name": "View Advanced Search Results with Filters",
+      "summary": "User navigates to the advanced search page with additional filter options and views paginated search results",
+      "tags": ["openmrs", "patient-search", "advanced-search"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-patient-search-app/src/patient-search-page/advanced-patient-search.component.tsx",
+      "lineRange": [1, 150]
+    },
+    {
+      "id": "step:search-for-patient:display-patient-banner",
+      "type": "step",
+      "name": "Display Patient Banner",
+      "summary": "Shows patient banner with photo, name, identifiers, age, gender, contact details toggling, and queue status indicator",
+      "tags": ["openmrs", "patient-search", "patient-banner"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-patient-search-app/src/patient-search-page/patient-banner",
+      "lineRange": [0, 0]
+    },
+    {
+      "id": "domain:patient-lists",
+      "type": "domain",
+      "name": "Patient Lists",
+      "summary": "Cohort-based patient list management with CRUD operations for lists, add/remove member functionality, list dashboard with search and pagination, and offline support for synchronized patient lists.",
+      "tags": ["openmrs", "patient-management", "cohort", "patient-lists"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entities": ["Cohort", "CohortMember", "PatientList", "CohortResponse"],
+        "businessRules": ["Patient lists are implemented as OpenMRS cohorts via /cohortm REST API", "Lists can be created as user-defined system cohorts", "Lists support offline data synchronization"],
+        "crossDomainInteractions": ["Patients can be added to lists from the Patient Search result actions", "Patient list members are individual patient records"]
+      }
+    },
+    {
+      "id": "flow:create-and-manage-patient-lists",
+      "type": "flow",
+      "name": "Create and Manage Patient Lists",
+      "summary": "Create new patient lists, edit existing list metadata, delete/retire lists, and view lists dashboard with searching and pagination",
+      "tags": ["openmrs", "patient-lists", "crud"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "Patient lists dashboard route",
+        "entryType": "manual"
+      }
+    },
+    {
+      "id": "flow:manage-list-membership",
+      "type": "flow",
+      "name": "Manage List Membership",
+      "summary": "Add patients to a list and remove patients from a list with confirmation modals, list detail view with member table",
+      "tags": ["openmrs", "patient-lists", "membership"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "Overflow menu on patient search results or list detail page",
+        "entryType": "manual"
+      }
+    },
+    {
+      "id": "step:create-and-manage-patient-lists:create-new-list",
+      "type": "step",
+      "name": "Create New Patient List",
+      "summary": "User fills out name, description, and type for a new patient list via the patient list form, which creates a cohort via REST API",
+      "tags": ["openmrs", "patient-lists", "create"],
+      "complexity": "simple",
+      "filePath": "packages/esm-patient-list-management-app/src/patient-list-form",
+      "lineRange": [0, 0]
+    },
+    {
+      "id": "step:create-and-manage-patient-lists:view-and-manage-lists-dashboard",
+      "type": "step",
+      "name": "View and Manage Lists Dashboard",
+      "summary": "Lists dashboard with search, pagination, and action menus for editing or deleting lists",
+      "tags": ["openmrs", "patient-lists", "dashboard"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-patient-list-management-app/src/lists-dashboard/lists-dashboard.component.tsx",
+      "lineRange": [1, 100]
+    },
+    {
+      "id": "step:create-and-manage-patient-lists:edit-or-delete-list",
+      "type": "step",
+      "name": "Edit or Delete Patient List",
+      "summary": "Edit list name and description, or delete/retire a patient list with confirmation modal",
+      "tags": ["openmrs", "patient-lists", "edit", "delete"],
+      "complexity": "simple",
+      "filePath": "packages/esm-patient-list-management-app/src/modals",
+      "lineRange": [0, 0]
+    },
+    {
+      "id": "step:manage-list-membership:add-patient-to-list",
+      "type": "step",
+      "name": "Add Patient to List",
+      "summary": "Select a patient and add them to one or more patient lists via an overlay modal trigger from the patient search overflow menu",
+      "tags": ["openmrs", "patient-lists", "add-member"],
+      "complexity": "simple",
+      "filePath": "packages/esm-patient-list-management-app/src/add-patient-to-patient-list-menu-item.component.tsx",
+      "lineRange": [12, 34]
+    },
+    {
+      "id": "step:manage-list-membership:remove-patient-from-list",
+      "type": "step",
+      "name": "Remove Patient from List",
+      "summary": "Remove a patient from a list with confirmation modal from the list detail view",
+      "tags": ["openmrs", "patient-lists", "remove-member"],
+      "complexity": "simple",
+      "filePath": "packages/esm-patient-list-management-app/src/modals/remove-patient-from-list",
+      "lineRange": [0, 0]
+    },
+    {
+      "id": "domain:bed-management",
+      "type": "domain",
+      "name": "Bed Management",
+      "summary": "Administration and summary views for hospital beds including bed creation/editing, bed types (CRUD), bed tags (CRUD), ward-to-bed assignments, and bed summary dashboards.",
+      "tags": ["openmrs", "patient-management", "beds", "ward", "administration"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entities": ["Bed", "BedType", "BedTag", "Ward", "AdmissionLocation"],
+        "businessRules": ["Beds are associated with wards and have types and tags", "Bed tags and types are configurable through admin forms", "Bed administration requires form-based creation with resource lookups"],
+        "crossDomainInteractions": ["Ward domain uses bed data for inpatient bed assignments", "Bed availability provides data for bed summary views"]
+      }
+    },
+    {
+      "id": "flow:administer-beds",
+      "type": "flow",
+      "name": "Administer Beds",
+      "summary": "Create, edit, and manage beds including bed type and bed tag configuration, and bed-to-ward assignment via form-based workspace",
+      "tags": ["openmrs", "bed-management", "admin", "crud"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "Bed administration route and admin forms",
+        "entryType": "manual"
+      }
+    },
+    {
+      "id": "flow:view-bed-summary",
+      "type": "flow",
+      "name": "View Bed Summary",
+      "summary": "Dashboard showing bed occupancy summary across wards, bed type distribution, and bed tag groupings",
+      "tags": ["openmrs", "bed-management", "summary", "dashboard"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "Bed summary route",
+        "entryType": "manual"
+      }
+    },
+    {
+      "id": "step:administer-beds:create-edit-bed-form",
+      "type": "step",
+      "name": "Create or Edit Bed",
+      "summary": "Form workspace for creating or editing a bed with ward assignment, bed type, bed tag selection, row/column positioning, and status",
+      "tags": ["openmrs", "bed-management", "bed-form"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-bed-management-app/src/bed-administration/form/bed-form.workspace.tsx",
+      "lineRange": [1, 200]
+    },
+    {
+      "id": "step:administer-beds:manage-bed-types",
+      "type": "step",
+      "name": "Manage Bed Types",
+      "summary": "CRUD operations for bed types including create new, edit existing, and delete with confirmation, displayed in an administration table",
+      "tags": ["openmrs", "bed-management", "bed-type"],
+      "complexity": "simple",
+      "filePath": "packages/esm-bed-management-app/src/bed-type",
+      "lineRange": [0, 0]
+    },
+    {
+      "id": "step:administer-beds:manage-bed-tags",
+      "type": "step",
+      "name": "Manage Bed Tags",
+      "summary": "CRUD operations for bed tags including create new tag form, edit existing tag, and delete with confirmation modal",
+      "tags": ["openmrs", "bed-management", "bed-tag"],
+      "complexity": "simple",
+      "filePath": "packages/esm-bed-management-app/src/bed-tag",
+      "lineRange": [0, 0]
+    },
+    {
+      "id": "step:view-bed-summary:display-ward-and-bed-summary",
+      "type": "step",
+      "name": "Display Ward and Bed Summary",
+      "summary": "Renders summary view with bed counts per ward, occupancy status, and bed type/tag distribution cards",
+      "tags": ["openmrs", "bed-management", "summary"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-bed-management-app/src/summary/summary.component.tsx",
+      "lineRange": [1, 100]
+    },
+    {
+      "id": "domain:ward",
+      "type": "domain",
+      "name": "Ward",
+      "summary": "Inpatient ward management including ward view with bed layouts, patient admissions, discharges, transfers, bed-to-patient assignments, admission requests, patient notes, and maternal ward with mother-baby linking.",
+      "tags": ["openmrs", "patient-management", "ward", "inpatient", "admissions"],
+      "complexity": "complex",
+      "domainMeta": {
+        "entities": ["BedLayout", "InpatientAdmission", "InpatientRequest", "AdmissionLocation", "WardPatientGroup", "DispositionType", "Encounter"],
+        "businessRules": ["Admission creates an encounter with admission encounter type", "Transfer creates an encounter with transfer-within-hospital encounter type", "Discharge ends the inpatient stay", "Beds can be shared by multiple patients (e.g., maternal ward with newborns)", "Admission requests must be approved before bed assignment"],
+        "crossDomainInteractions": ["Ward uses Bed Management domain data for bed layouts", "Patient data comes from the core patient model", "Encounter creation connects to the OpenMRS encounter/visit system"]
+      }
+    },
+    {
+      "id": "flow:admit-patient-to-ward",
+      "type": "flow",
+      "name": "Admit Patient to Ward",
+      "summary": "Admits a patient to the ward by assigning them to a bed, creating an admission encounter, and updating the ward view",
+      "tags": ["openmrs", "ward", "admission"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "Admit patient button in ward workspace",
+        "entryType": "manual"
+      }
+    },
+    {
+      "id": "flow:transfer-or-discharge-patient",
+      "type": "flow",
+      "name": "Transfer or Discharge Patient",
+      "summary": "Transfers a patient to a different bed/ward or discharges them, creating appropriate encounter types and updating bed assignments",
+      "tags": ["openmrs", "ward", "transfer", "discharge"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "Transfer or discharge action buttons in ward workspace",
+        "entryType": "manual"
+      }
+    },
+    {
+      "id": "flow:view-ward",
+      "type": "flow",
+      "name": "View Ward",
+      "summary": "Displays the ward view with bed layouts, patient cards on beds, admission requests, and ward-level metrics (patient count, newborns, females of reproductive age)",
+      "tags": ["openmrs", "ward", "view", "dashboard"],
+      "complexity": "complex",
+      "domainMeta": {
+        "entryPoint": "Route navigation to ward dashboard",
+        "entryType": "manual"
+      }
+    },
+    {
+      "id": "step:admit-patient-to-ward:assign-bed-and-create-admission",
+      "type": "step",
+      "name": "Assign Bed and Create Admission Encounter",
+      "summary": "Selects an available bed for the patient, creates an admission encounter via POST /encounter, and assigns the patient to the bed layout",
+      "tags": ["openmrs", "ward", "admission", "encounter"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-ward-app/src/ward.resource.ts",
+      "lineRange": [49, 70]
+    },
+    {
+      "id": "step:admit-patient-to-ward:handle-admission-request",
+      "type": "step",
+      "name": "Handle Admission Request",
+      "summary": "Processes pending admission requests, allowing approval and bed assignment through the admission request workspace",
+      "tags": ["openmrs", "ward", "admission-request"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-ward-app/src/ward-workspace/admission-request-workspace",
+      "lineRange": [0, 0]
+    },
+    {
+      "id": "step:transfer-or-discharge-patient:create-transfer-encounter",
+      "type": "step",
+      "name": "Create Transfer Encounter",
+      "summary": "Creates a transfer-within-hospital encounter and moves the patient to a new bed in the destination ward",
+      "tags": ["openmrs", "ward", "transfer"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-ward-app/src/ward.resource.ts",
+      "lineRange": [49, 70]
+    },
+    {
+      "id": "step:transfer-or-discharge-patient:discharge-patient",
+      "type": "step",
+      "name": "Discharge Patient",
+      "summary": "Creates a discharge encounter and removes the patient from the bed layout, ending the inpatient stay",
+      "tags": ["openmrs", "ward", "discharge"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-ward-app/src/ward-workspace/patient-discharge",
+      "lineRange": [0, 0]
+    },
+    {
+      "id": "step:view-ward:display-ward-layout-with-beds",
+      "type": "step",
+      "name": "Display Ward Layout with Beds",
+      "summary": "Renders the ward view showing all beds with occupancy status, patient cards, and empty bed indicators arranged by row and column",
+      "tags": ["openmrs", "ward", "view"],
+      "complexity": "complex",
+      "filePath": "packages/esm-ward-app/src/ward-view/ward-view.component.tsx",
+      "lineRange": [1, 120]
+    },
+    {
+      "id": "step:view-ward:compute-ward-metrics",
+      "type": "step",
+      "name": "Compute Ward Metrics",
+      "summary": "Calculates ward metrics including total patient count, newborn count, females of reproductive age count from the ward patient group data",
+      "tags": ["openmrs", "ward", "metrics"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-ward-app/src/ward-view/ward-view.resource.ts",
+      "lineRange": [50, 80]
+    },
+    {
+      "id": "step:view-ward:display-maternal-ward",
+      "type": "step",
+      "name": "Display Maternal Ward View",
+      "summary": "Special ward view for maternal ward with mother-baby bed sharing, where mothers and newborns can occupy the same bed",
+      "tags": ["openmrs", "ward", "maternal"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-ward-app/src/ward-view/maternal-ward",
+      "lineRange": [0, 0]
+    },
+    {
+      "id": "domain:home-and-dashboard",
+      "type": "domain",
+      "name": "Home and Dashboard",
+      "summary": "Home page dashboard container and navigation menu configuration. Provides sidebar navigation and renders extension-based dashboard views for all registered microfrontend domains. Acts as the shell for the entire application.",
+      "tags": ["openmrs", "patient-management", "home", "dashboard", "navigation"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entities": ["DashboardConfig", "AssignedExtension"],
+        "businessRules": ["Dashboards are registered as extensions to the homepage-dashboard-slot", "Active dashboard is determined by URL parameter or defaults to first registered dashboard", "Sidebar mode can be configured as normal or minimized"],
+        "crossDomainInteractions": ["All domain dashboards (queues, appointments, visits, etc.) are rendered inside this container", "Navigation to all domains flows through the home page side menu"]
+      }
+    },
+    {
+      "id": "flow:navigate-dashboard",
+      "type": "flow",
+      "name": "Navigate Dashboard",
+      "summary": "Loads the dashboard container, resolves the active dashboard from URL params, renders sidebar navigation, and delegates rendering to the active microfrontend extension",
+      "tags": ["openmrs", "home", "dashboard", "navigation"],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "Route navigation to home page",
+        "entryType": "manual"
+      }
+    },
+    {
+      "id": "step:navigate-dashboard:resolve-and-render-dashboard",
+      "type": "step",
+      "name": "Resolve and Render Active Dashboard",
+      "summary": "Reads URL parameters to determine the active dashboard extension, displays sidebar navigation, and renders the corresponding dashboard slot",
+      "tags": ["openmrs", "home", "dashboard"],
+      "complexity": "moderate",
+      "filePath": "packages/esm-home-app/src/dashboard-container/dashboard-container.component.tsx",
+      "lineRange": [16, 43]
+    },
+    {
+      "id": "step:navigate-dashboard:render-sidebar-menu",
+      "type": "step",
+      "name": "Render Sidebar Menu",
+      "summary": "Renders the side menu with navigation links to all registered dashboard extensions based on configuration",
+      "tags": ["openmrs", "home", "sidebar", "navigation"],
+      "complexity": "simple",
+      "filePath": "packages/esm-home-app/src/side-menu",
+      "lineRange": [0, 0]
+    }
+  ],
+  "edges": [
+    { "source": "domain:service-queues", "target": "flow:add-patient-to-queue", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:service-queues", "target": "flow:transition-queue-entry", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:service-queues", "target": "flow:serve-queue-entry", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:service-queues", "target": "flow:administer-queues", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:service-queues", "target": "flow:manage-queue-linelists", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:service-queues", "target": "flow:view-queue-metrics", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:add-patient-to-queue", "target": "step:add-patient-to-queue:open-create-queue-entry-workspace", "type": "flow_step", "direction": "forward", "weight": 0.2 },
+    { "source": "flow:add-patient-to-queue", "target": "step:add-patient-to-queue:select-patient-and-verify-visit", "type": "flow_step", "direction": "forward", "weight": 0.4 },
+    { "source": "flow:add-patient-to-queue", "target": "step:add-patient-to-queue:handle-existing-visit", "type": "flow_step", "direction": "forward", "weight": 0.5 },
+    { "source": "flow:add-patient-to-queue", "target": "step:add-patient-to-queue:fill-queue-fields", "type": "flow_step", "direction": "forward", "weight": 0.8 },
+    { "source": "flow:add-patient-to-queue", "target": "step:add-patient-to-queue:submit-queue-entry", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:transition-queue-entry", "target": "step:transition-queue-entry:open-queue-entry-actions-modal", "type": "flow_step", "direction": "forward", "weight": 0.2 },
+    { "source": "flow:transition-queue-entry", "target": "step:transition-queue-entry:select-new-queue-and-status", "type": "flow_step", "direction": "forward", "weight": 0.4 },
+    { "source": "flow:transition-queue-entry", "target": "step:transition-queue-entry:call-transition-api", "type": "flow_step", "direction": "forward", "weight": 0.6 },
+    { "source": "flow:transition-queue-entry", "target": "step:transition-queue-entry:handle-transition-errors", "type": "flow_step", "direction": "forward", "weight": 0.8 },
+    { "source": "flow:transition-queue-entry", "target": "step:transition-queue-entry:undo-transition", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:serve-queue-entry", "target": "step:serve-queue-entry:call-patient-to-service-point", "type": "flow_step", "direction": "forward", "weight": 0.5 },
+    { "source": "flow:serve-queue-entry", "target": "step:serve-queue-entry:display-active-tickets", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:administer-queues", "target": "step:administer-queues:create-edit-queues", "type": "flow_step", "direction": "forward", "weight": 0.3 },
+    { "source": "flow:administer-queues", "target": "step:administer-queues:create-edit-queue-rooms", "type": "flow_step", "direction": "forward", "weight": 0.6 },
+    { "source": "flow:administer-queues", "target": "step:administer-queues:retire-queues-and-rooms", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:manage-queue-linelists", "target": "step:manage-queue-linelists:view-linelist-table", "type": "flow_step", "direction": "forward", "weight": 0.5 },
+    { "source": "flow:manage-queue-linelists", "target": "step:manage-queue-linelists:execute-queue-entry-actions", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:view-queue-metrics", "target": "step:view-queue-metrics:display-metrics-cards", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:appointments", "target": "flow:create-or-edit-appointment", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:appointments", "target": "flow:view-appointments-calendar", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:appointments", "target": "flow:manage-appointment-workload", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:appointments", "target": "flow:view-patient-appointments", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:create-or-edit-appointment", "target": "step:create-or-edit-appointment:fill-appointment-form", "type": "flow_step", "direction": "forward", "weight": 0.3 },
+    { "source": "flow:create-or-edit-appointment", "target": "step:create-or-edit-appointment:check-conflicts", "type": "flow_step", "direction": "forward", "weight": 0.5 },
+    { "source": "flow:create-or-edit-appointment", "target": "step:create-or-edit-appointment:save-appointment", "type": "flow_step", "direction": "forward", "weight": 0.8 },
+    { "source": "flow:create-or-edit-appointment", "target": "step:create-or-edit-appointment:cancel-appointment", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:view-appointments-calendar", "target": "step:view-appointments-calendar:navigate-monthly-view", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:manage-appointment-workload", "target": "step:manage-appointment-workload:view-workload-by-month", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:active-visits", "target": "flow:view-active-visits-table", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:active-visits", "target": "flow:view-visit-summary", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:view-active-visits-table", "target": "step:view-active-visits-table:fetch-active-visits", "type": "flow_step", "direction": "forward", "weight": 0.3 },
+    { "source": "flow:view-active-visits-table", "target": "step:view-active-visits-table:render-sortable-table", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:view-visit-summary", "target": "step:view-visit-summary:display-encounters-and-details", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:patient-registration", "target": "flow:register-new-patient", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:patient-registration", "target": "flow:edit-existing-patient", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:register-new-patient", "target": "step:register-new-patient:fill-registration-sections", "type": "flow_step", "direction": "forward", "weight": 0.3 },
+    { "source": "flow:register-new-patient", "target": "step:register-new-patient:validate-form", "type": "flow_step", "direction": "forward", "weight": 0.5 },
+    { "source": "flow:register-new-patient", "target": "step:register-new-patient:submit-patient-to-api", "type": "flow_step", "direction": "forward", "weight": 0.8 },
+    { "source": "flow:register-new-patient", "target": "step:register-new-patient:handle-offline-sync", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:patient-search", "target": "flow:search-for-patient", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:search-for-patient", "target": "step:search-for-patient:enter-search-query", "type": "flow_step", "direction": "forward", "weight": 0.3 },
+    { "source": "flow:search-for-patient", "target": "step:search-for-patient:view-advanced-search-results", "type": "flow_step", "direction": "forward", "weight": 0.6 },
+    { "source": "flow:search-for-patient", "target": "step:search-for-patient:display-patient-banner", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:patient-lists", "target": "flow:create-and-manage-patient-lists", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:patient-lists", "target": "flow:manage-list-membership", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:create-and-manage-patient-lists", "target": "step:create-and-manage-patient-lists:create-new-list", "type": "flow_step", "direction": "forward", "weight": 0.3 },
+    { "source": "flow:create-and-manage-patient-lists", "target": "step:create-and-manage-patient-lists:view-and-manage-lists-dashboard", "type": "flow_step", "direction": "forward", "weight": 0.6 },
+    { "source": "flow:create-and-manage-patient-lists", "target": "step:create-and-manage-patient-lists:edit-or-delete-list", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:manage-list-membership", "target": "step:manage-list-membership:add-patient-to-list", "type": "flow_step", "direction": "forward", "weight": 0.5 },
+    { "source": "flow:manage-list-membership", "target": "step:manage-list-membership:remove-patient-from-list", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:bed-management", "target": "flow:administer-beds", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:bed-management", "target": "flow:view-bed-summary", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:administer-beds", "target": "step:administer-beds:create-edit-bed-form", "type": "flow_step", "direction": "forward", "weight": 0.3 },
+    { "source": "flow:administer-beds", "target": "step:administer-beds:manage-bed-types", "type": "flow_step", "direction": "forward", "weight": 0.6 },
+    { "source": "flow:administer-beds", "target": "step:administer-beds:manage-bed-tags", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:view-bed-summary", "target": "step:view-bed-summary:display-ward-and-bed-summary", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:ward", "target": "flow:admit-patient-to-ward", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:ward", "target": "flow:transfer-or-discharge-patient", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:ward", "target": "flow:view-ward", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:admit-patient-to-ward", "target": "step:admit-patient-to-ward:assign-bed-and-create-admission", "type": "flow_step", "direction": "forward", "weight": 0.5 },
+    { "source": "flow:admit-patient-to-ward", "target": "step:admit-patient-to-ward:handle-admission-request", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:transfer-or-discharge-patient", "target": "step:transfer-or-discharge-patient:create-transfer-encounter", "type": "flow_step", "direction": "forward", "weight": 0.5 },
+    { "source": "flow:transfer-or-discharge-patient", "target": "step:transfer-or-discharge-patient:discharge-patient", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:view-ward", "target": "step:view-ward:display-ward-layout-with-beds", "type": "flow_step", "direction": "forward", "weight": 0.3 },
+    { "source": "flow:view-ward", "target": "step:view-ward:compute-ward-metrics", "type": "flow_step", "direction": "forward", "weight": 0.6 },
+    { "source": "flow:view-ward", "target": "step:view-ward:display-maternal-ward", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:home-and-dashboard", "target": "flow:navigate-dashboard", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
+    { "source": "flow:navigate-dashboard", "target": "step:navigate-dashboard:resolve-and-render-dashboard", "type": "flow_step", "direction": "forward", "weight": 0.5 },
+    { "source": "flow:navigate-dashboard", "target": "step:navigate-dashboard:render-sidebar-menu", "type": "flow_step", "direction": "forward", "weight": 1.0 },
+    { "source": "domain:service-queues", "target": "domain:patient-search", "type": "cross_domain", "direction": "forward", "description": "Patient search results are used to select patients for queue entry creation", "weight": 0.8 },
+    { "source": "domain:service-queues", "target": "domain:active-visits", "type": "cross_domain", "direction": "forward", "description": "Queue entries require patient active visits for creation and display visit data", "weight": 0.8 },
+    { "source": "domain:patient-search", "target": "domain:patient-registration", "type": "cross_domain", "direction": "forward", "description": "Patient search can navigate to edit patient registration", "weight": 0.5 },
+    { "source": "domain:ward", "target": "domain:bed-management", "type": "cross_domain", "direction": "forward", "description": "Ward view uses bed layouts and bed types managed by the Bed Management domain", "weight": 0.7 },
+    { "source": "domain:patient-lists", "target": "domain:patient-search", "type": "cross_domain", "direction": "forward", "description": "Patients can be added to lists from patient search overflow menu", "weight": 0.6 },
+    { "source": "domain:home-and-dashboard", "target": "domain:service-queues", "type": "cross_domain", "direction": "forward", "description": "Home dashboard renders the service queues dashboard extension", "weight": 0.5 },
+    { "source": "domain:home-and-dashboard", "target": "domain:appointments", "type": "cross_domain", "direction": "forward", "description": "Home dashboard renders the appointments dashboard extension", "weight": 0.5 },
+    { "source": "domain:home-and-dashboard", "target": "domain:active-visits", "type": "cross_domain", "direction": "forward", "description": "Home dashboard renders the active visits dashboard extension and metric tiles", "weight": 0.5 },
+    { "source": "domain:appointments", "target": "domain:patient-search", "type": "cross_domain", "direction": "forward", "description": "Appointment form uses patient data fetched via patient UUID", "weight": 0.5 }
+  ],
+  "layers": [],
+  "tour": []
+}

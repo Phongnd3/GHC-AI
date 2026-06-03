@@ -1,0 +1,247 @@
+{
+  "batch": 22,
+  "description": "Active Visits Widget + leftover __mocks__ files",
+  "files": [
+    {
+      "path": "packages/esm-active-visits-app/src/active-visits-widget/active-visits.component.tsx",
+      "type": "file",
+      "language": "tsx",
+      "symbols": [
+        { "name": "ActiveVisitsTable", "type": "component", "exported": "default" }
+      ],
+      "imports": [
+        { "source": "react", "symbols": ["useCallback", "useMemo", "useState"] },
+        { "source": "@carbon/react", "symbols": ["DataTable", "DataTableSkeleton", "InlineLoading", "Layer", "Pagination", "Search", "Table", "TableBody", "TableCell", "TableContainer", "TableExpandedRow", "TableExpandHeader", "TableExpandRow", "TableHead", "TableHeader", "TableRow", "Tile"] },
+        { "source": "react-i18next", "symbols": ["useTranslation"] },
+        { "source": "@openmrs/esm-framework", "symbols": ["ConfigurableLink", "EmptyCardIllustration", "ErrorState", "ExtensionSlot", "isDesktop", "useConfig", "useLayoutType", "usePagination"] },
+        { "source": "./active-visits.resource", "symbols": ["useActiveVisits", "useActiveVisitsSorting", "useObsConcepts", "useTableHeaders"] },
+        { "source": "../config-schema", "symbols": ["ActiveVisitsConfigSchema"] },
+        { "source": "../types", "symbols": ["ActiveVisit"] },
+        { "source": "./active-visits.scss", "symbols": [] }
+      ]
+    },
+    {
+      "path": "packages/esm-active-visits-app/src/active-visits-widget/active-visits.test.tsx",
+      "type": "file",
+      "language": "tsx",
+      "symbols": [
+        { "name": "mockUseActiveVisits", "type": "variable", "exported": false },
+        { "name": "mockUseObsConcepts", "type": "variable", "exported": false },
+        { "name": "mockUseConfig", "type": "variable", "exported": false },
+        { "name": "mockObsConcepts", "type": "variable", "exported": false },
+        { "name": "mockConfig", "type": "variable", "exported": false },
+        { "name": "mockActiveVisits", "type": "variable", "exported": false },
+        { "name": "ActiveVisitsTable describe block", "type": "test-suite", "exported": false }
+      ],
+      "imports": [
+        { "source": "react", "symbols": [] },
+        { "source": "@testing-library/user-event", "symbols": ["default"] },
+        { "source": "@testing-library/react", "symbols": ["render", "screen"] },
+        { "source": "@openmrs/esm-framework", "symbols": ["getDefaultsFromConfigSchema", "OpenmrsResource", "useConfig"] },
+        { "source": "__mocks__", "symbols": ["mockSession"] },
+        { "source": "../config-schema", "symbols": ["ActiveVisitsConfigSchema", "configSchema"] },
+        { "source": "../types", "symbols": ["ActiveVisit", "Observation"] },
+        { "source": "./active-visits.resource", "symbols": ["useActiveVisits", "useObsConcepts"] },
+        { "source": "./active-visits.component", "symbols": ["default"] }
+      ]
+    },
+    {
+      "path": "packages/esm-active-visits-app/src/active-visits-widget/active-visits-widget-config-schema.ts",
+      "type": "file",
+      "language": "ts",
+      "note": "NOT FOUND at expected path. The actual config-schema file is at packages/esm-active-visits-app/src/config-schema.ts (imported as '../config-schema'). This entry may have been processed in another batch."
+    },
+    {
+      "path": "__mocks__/active-visits.mock.ts",
+      "type": "file",
+      "language": "ts",
+      "symbols": [
+        { "name": "mockServiceData", "type": "variable", "exported": true },
+        { "name": "mockVisitQueueEntries", "type": "variable", "exported": true }
+      ],
+      "imports": [
+        { "source": "@openmrs/esm-framework", "symbols": ["restBaseUrl"] }
+      ]
+    },
+    {
+      "path": "__mocks__/appointments.mock.ts",
+      "type": "file",
+      "language": "ts",
+      "symbols": [
+        { "name": "mockAppointmentsData", "type": "variable", "exported": true },
+        { "name": "mockPatient", "type": "variable", "exported": true },
+        { "name": "mockProviders", "type": "variable", "exported": true },
+        { "name": "mockUseAppointmentServiceData", "type": "variable", "exported": true },
+        { "name": "mockMappedAppointmentsData", "type": "variable", "exported": true }
+      ],
+      "imports": []
+    },
+    {
+      "path": "__mocks__/auto-generation-options.mock.ts",
+      "type": "file",
+      "language": "ts",
+      "symbols": [
+        { "name": "mockAutoGenerationOptionsResult", "type": "variable", "exported": true }
+      ],
+      "imports": []
+    },
+    {
+      "path": "__mocks__/emr-configuration.mock.ts",
+      "type": "file",
+      "language": "ts",
+      "symbols": [
+        { "name": "emrConfigurationMock", "type": "variable", "exported": true }
+      ],
+      "imports": [
+        { "source": "@openmrs/esm-ward-app/src/hooks/useEmrConfiguration", "symbols": ["EmrApiConfigurationResponse"] }
+      ]
+    },
+    {
+      "path": "__mocks__/encountes.mock.ts",
+      "type": "file",
+      "language": "ts",
+      "symbols": [
+        { "name": "mockEncounterAlice", "type": "variable", "exported": true }
+      ],
+      "imports": [
+        { "source": "../packages/esm-ward-app/src/types", "symbols": ["Encounter"] },
+        { "source": "./patient.mock", "symbols": ["mockPatientAlice"] },
+        { "source": "./queue-entry.mock", "symbols": ["mockLocationSurgery"] },
+        { "source": "./visits.mock", "symbols": ["mockVisitAlice"] }
+      ]
+    },
+    {
+      "path": "__mocks__/identifier-types.mock.ts",
+      "type": "file",
+      "language": "ts",
+      "symbols": [
+        { "name": "mockIdentifierTypes", "type": "variable", "exported": true },
+        { "name": "mockOpenmrsId", "type": "variable", "exported": true }
+      ],
+      "imports": []
+    },
+    {
+      "path": "__mocks__/identifiers.mock.ts",
+      "type": "file",
+      "language": "ts",
+      "symbols": [
+        { "name": "openmrsID", "type": "variable", "exported": true }
+      ],
+      "imports": []
+    },
+    {
+      "path": "__mocks__/inpatient-admission.ts",
+      "type": "file",
+      "language": "ts",
+      "symbols": [
+        { "name": "mockInpatientAdmissionAlice", "type": "variable", "exported": true }
+      ],
+      "imports": [
+        { "source": "@openmrs/esm-ward-app/src/types", "symbols": ["InpatientAdmission"] },
+        { "source": "./encountes.mock", "symbols": ["mockEncounterAlice"] },
+        { "source": "./patient.mock", "symbols": ["mockPatientAlice"] },
+        { "source": "./visits.mock", "symbols": ["mockVisitAlice"] },
+        { "source": "./locations.mock", "symbols": ["mockLocationInpatientWard"] }
+      ]
+    },
+    {
+      "path": "__mocks__/inpatient-request.ts",
+      "type": "file",
+      "language": "ts",
+      "symbols": [
+        { "name": "mockInpatientRequestAlice", "type": "variable", "exported": true },
+        { "name": "mockInpatientRequests", "type": "variable", "exported": true }
+      ],
+      "imports": [
+        { "source": "@openmrs/esm-ward-app/src/types", "symbols": ["InpatientRequest"] },
+        { "source": "./locations.mock", "symbols": ["mockLocationInpatientWard"] },
+        { "source": "./patient.mock", "symbols": ["mockPatientAlice"] },
+        { "source": "./visits.mock", "symbols": ["mockVisitAlice"] }
+      ]
+    },
+    {
+      "path": "__mocks__/metrics.mock.ts",
+      "type": "file",
+      "language": "ts",
+      "symbols": [
+        { "name": "mockMetrics", "type": "variable", "exported": true },
+        { "name": "mockServices", "type": "variable", "exported": true },
+        { "name": "mockServiceTypes", "type": "variable", "exported": true },
+        { "name": "mockStatus", "type": "variable", "exported": true },
+        { "name": "mockPriorities", "type": "variable", "exported": true }
+      ],
+      "imports": []
+    },
+    {
+      "path": "__mocks__/patient-appointments.mock.ts",
+      "type": "file",
+      "language": "ts",
+      "symbols": [
+        { "name": "mockPatientAppointments", "type": "variable", "exported": true }
+      ],
+      "imports": []
+    },
+    {
+      "path": "__mocks__/patient-registration.mock.ts",
+      "type": "file",
+      "language": "ts",
+      "symbols": [
+        { "name": "mockedAddressTemplate", "type": "variable", "exported": true },
+        { "name": "mockedOrderedFields", "type": "variable", "exported": true },
+        { "name": "mockedAddressOptions", "type": "variable", "exported": true }
+      ],
+      "imports": []
+    },
+    {
+      "path": "__mocks__/queue-rooms.mock.ts",
+      "type": "file",
+      "language": "ts",
+      "symbols": [
+        { "name": "mockQueueRooms", "type": "variable", "exported": true }
+      ],
+      "imports": []
+    }
+  ],
+  "externalRefs": [
+    {
+      "path": "packages/esm-active-visits-app/src/config-schema.ts",
+      "reason": "Imported by active-visits.component.tsx and active-visits.test.tsx as '../config-schema'. Contains interfaces ActiveVisitsConfigSchema, IdentifiersDefinition, AttributeDefinition and const configSchema.",
+      "symbols": ["ActiveVisitsConfigSchema", "IdentifiersDefinition", "AttributeDefinition", "configSchema"]
+    },
+    {
+      "path": "packages/esm-active-visits-app/src/active-visits-widget/active-visits.resource.ts",
+      "reason": "Imported by active-visits.component.tsx and active-visits.test.tsx. Contains hooks: useActiveVisits, useObsConcepts, useActiveVisitsSorting, useTableHeaders, getOriginFromPathName.",
+      "symbols": ["useActiveVisits", "useObsConcepts", "useActiveVisitsSorting", "useTableHeaders", "getOriginFromPathName"]
+    },
+    {
+      "path": "packages/esm-active-visits-app/src/types/index.ts",
+      "reason": "Imported by active-visits.component.tsx, active-visits.test.tsx, and active-visits.resource.ts as '../types'. Contains core domain interfaces.",
+      "symbols": ["ActiveVisit", "VisitResponse", "Observation", "Encounter", "Identifier", "SearchedPatient", "EncounterProvider", "Order", "Note", "OrderItem"]
+    }
+  ],
+  "edges": [
+    { "from": "packages/esm-active-visits-app/src/active-visits-widget/active-visits.component.tsx", "to": "packages/esm-active-visits-app/src/active-visits-widget/active-visits.resource.ts", "type": "imports" },
+    { "from": "packages/esm-active-visits-app/src/active-visits-widget/active-visits.component.tsx", "to": "packages/esm-active-visits-app/src/config-schema.ts", "type": "imports" },
+    { "from": "packages/esm-active-visits-app/src/active-visits-widget/active-visits.component.tsx", "to": "packages/esm-active-visits-app/src/types/index.ts", "type": "imports" },
+    { "from": "packages/esm-active-visits-app/src/active-visits-widget/active-visits.test.tsx", "to": "packages/esm-active-visits-app/src/config-schema.ts", "type": "imports" },
+    { "from": "packages/esm-active-visits-app/src/active-visits-widget/active-visits.test.tsx", "to": "packages/esm-active-visits-app/src/types/index.ts", "type": "imports" },
+    { "from": "packages/esm-active-visits-app/src/active-visits-widget/active-visits.test.tsx", "to": "packages/esm-active-visits-app/src/active-visits-widget/active-visits.resource.ts", "type": "imports" },
+    { "from": "packages/esm-active-visits-app/src/active-visits-widget/active-visits.test.tsx", "to": "packages/esm-active-visits-app/src/active-visits-widget/active-visits.component.tsx", "type": "imports" },
+    { "from": "__mocks__/emr-configuration.mock.ts", "to": "../packages/esm-ward-app/src/hooks/useEmrConfiguration", "type": "imports", "note": "External package esm-ward-app" },
+    { "from": "__mocks__/encountes.mock.ts", "to": "../packages/esm-ward-app/src/types", "type": "imports", "note": "External package esm-ward-app" },
+    { "from": "__mocks__/inpatient-admission.ts", "to": "../packages/esm-ward-app/src/types", "type": "imports", "note": "External package esm-ward-app" },
+    { "from": "__mocks__/inpatient-request.ts", "to": "../packages/esm-ward-app/src/types", "type": "imports", "note": "External package esm-ward-app" },
+    { "from": "__mocks__/inpatient-admission.ts", "to": "__mocks__/encountes.mock.ts", "type": "imports" },
+    { "from": "__mocks__/encountes.mock.ts", "to": "__mocks__/patient.mock", "type": "imports" },
+    { "from": "__mocks__/encountes.mock.ts", "to": "__mocks__/queue-entry.mock", "type": "imports" },
+    { "from": "__mocks__/encountes.mock.ts", "to": "__mocks__/visits.mock", "type": "imports" },
+    { "from": "__mocks__/inpatient-admission.ts", "to": "__mocks__/patient.mock", "type": "imports" },
+    { "from": "__mocks__/inpatient-admission.ts", "to": "__mocks__/visits.mock", "type": "imports" },
+    { "from": "__mocks__/inpatient-admission.ts", "to": "__mocks__/locations.mock", "type": "imports" },
+    { "from": "__mocks__/inpatient-request.ts", "to": "__mocks__/locations.mock", "type": "imports" },
+    { "from": "__mocks__/inpatient-request.ts", "to": "__mocks__/patient.mock", "type": "imports" },
+    { "from": "__mocks__/inpatient-request.ts", "to": "__mocks__/visits.mock", "type": "imports" },
+    { "from": "__mocks__/active-visits.mock.ts", "to": "@openmrs/esm-framework", "type": "imports_external" }
+  ],
+  "mermaid": "graph TD\n  AV[active-visits.component.tsx] --> RR[active-visits.resource.ts]\n  AV --> CS[config-schema.ts]\n  AV --> T[types/index.ts]\n  TEST[active-visits.test.tsx] --> AV\n  TEST --> RR\n  TEST --> CS\n  TEST --> T\n  EM[R_emr-configuration.mock.ts] --> WARD_H[esm-ward-app hooks]\n  ENC[R_encountes.mock.ts] --> WARD_T[esm-ward-app types]\n  IA[R_inpatient-admission.ts] --> WARD_T\n  IR[R_inpatient-request.ts] --> WARD_T\n  IA --> ENC\n  IA --> PM[R_patient.mock]\n  IA --> VM[R_visits.mock]\n  IA --> LM[R_locations.mock]\n  IR --> LM\n  IR --> PM\n  IR --> VM\n  ENC --> PM\n  ENC --> QEM[R_queue-entry.mock]\n  ENC --> VM\n  subgraph Active Visits App\n    AV\n    RR\n    CS\n    T\n    TEST\n  end\n  subgraph __mocks__\n    EM\n    ENC\n    IA\n    IR\n    PM\n    VM\n    LM\n    QEM\n    AM[R_active-visits.mock.ts]\n    APPT[R_appointments.mock.ts]\n    AGO[R_auto-generation-options.mock.ts]\n    IT[R_identifier-types.mock.ts]\n    ID[R_identifiers.mock.ts]\n    MET[R_metrics.mock.ts]\n    PA[R_patient-appointments.mock.ts]\n    PR[R_patient-registration.mock.ts]\n    QR[R_queue-rooms.mock.ts]\n  end"
+}
